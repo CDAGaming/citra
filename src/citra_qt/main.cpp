@@ -459,6 +459,7 @@ void GMainWindow::BootGame(const QString& filename) {
     render_window->show();
     render_window->setFocus();
 
+    current_game_path = filename;
     emulation_running = true;
     OnStartGame();
 }
@@ -618,6 +619,10 @@ void GMainWindow::OnPauseGame() {
     ui.action_Start->setEnabled(true);
     ui.action_Pause->setEnabled(false);
     ui.action_Stop->setEnabled(true);
+}
+
+void GMainWindow::OnRestartGame() {
+    BootGame(current_game_path);
 }
 
 void GMainWindow::OnStopGame() {
