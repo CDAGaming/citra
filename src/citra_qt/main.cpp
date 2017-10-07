@@ -625,6 +625,14 @@ void GMainWindow::OnRestartGame() {
     BootGame(current_game_path);
 }
 
+void GMainWindow::OnResumeGame() {
+    if (emu_thread->IsRunning()) {
+        OnPauseGame();
+    } else {
+        OnStartGame();
+    }
+}
+
 void GMainWindow::OnStopGame() {
     ShutdownGame();
 }
