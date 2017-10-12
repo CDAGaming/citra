@@ -78,6 +78,10 @@ set(UIS
             hotkeys.ui
             main.ui
             )
+if(WIN32)
+  list(APPEND SRCS windowsextras.cpp)
+  list(APPEND HEADERS windowsextras.h)
+endif()
 
 file(GLOB_RECURSE ICONS ${CMAKE_SOURCE_DIR}/dist/icons/*)
 file(GLOB_RECURSE THEMES ${CMAKE_SOURCE_DIR}/dist/qt_themes/*)
