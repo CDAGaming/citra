@@ -4,8 +4,35 @@
 
 #pragma once
 
-class WindowsExtras {
+#include <QWidget>
+#include <QWinThumbnailToolBar>
+#include <QWinThumbnailToolButton>
+
+class WindowsExtras : public QObject {
+    Q_OBJECT
+
 public:
-  WindowsExtras();
-  ~WindowsExtras();
+    void Show();
+    void UpdatePlay();
+    void UpdatePause();
+    void UpdateStop();
+
+    WindowsExtras(QWidget* parent);
+    ~WindowsExtras();
+
+private:
+    void InitializeThumbnailToolbar();
+
+signals:
+    void ClickPlayPause();
+    void ClickStop();
+    void ClickRestart();
+
+private:
+    QWinThumbnailToolBar* thumbbar = nullptr;
+    QWinThumbnailToolButton* play_pause = nullptr;
+    QWinThumbnailToolButton* stop = nullptr;
+    QWinThumbnailToolButton* restart = nullptr;
+
+    QWidget* parent = nullptr;
 };
