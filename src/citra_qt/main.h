@@ -25,6 +25,7 @@ class MicroProfileDialog;
 class ProfilerWidget;
 class RegistersWidget;
 class WaitTreeWidget;
+class WindowsExtras;
 
 class GMainWindow : public QMainWindow {
     Q_OBJECT
@@ -43,6 +44,7 @@ class GMainWindow : public QMainWindow {
 public:
     void filterBarSetChecked(bool state);
     void UpdateUITheme();
+    void ShowWindowsExtras();
     GMainWindow();
     ~GMainWindow();
 
@@ -69,6 +71,7 @@ private:
     void InitializeDebugWidgets();
     void InitializeRecentFileMenuActions();
     void InitializeHotkeys();
+    void InitializeWindowsExtras();
 
     void SetDefaultUIGeometry();
     void RestoreUIState();
@@ -135,6 +138,7 @@ private slots:
 
 private:
     void UpdateStatusBar();
+    void UpdateWindowsExtras();
 
     QString current_game_path; // To restart the game
 
@@ -168,6 +172,9 @@ private:
     WaitTreeWidget* waitTreeWidget;
 
     QAction* actions_recent_files[max_recent_files_item];
+
+    // Native Windows
+    WindowsExtras* windows_extras;
 
 protected:
     void dropEvent(QDropEvent* event) override;
