@@ -65,7 +65,7 @@ protected:
 
 class MappedBuffer {
 public:
-    MappedBuffer(Process& process, u32 descriptor, VAddr address, u32 id);
+    MappedBuffer(const Process& process, u32 descriptor, VAddr address, u32 id);
 
     // interface for service
     void Read(void* dest_buffer, size_t offset, size_t size);
@@ -78,7 +78,7 @@ public:
 private:
     friend class HLERequestContext;
     const VAddr address;
-    Process& process;
+    const Process& process;
     size_t size;
     IPC::MappedBufferPermissions perms;
 };

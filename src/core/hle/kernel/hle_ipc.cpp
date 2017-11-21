@@ -186,10 +186,11 @@ ResultCode HLERequestContext::WriteToOutgoingCommandBuffer(u32_le* dst_cmdbuf, P
 }
 
 MappedBuffer& HLERequestContext::GetMappedBuffer(u32 id_from_cmdbuf) {
+    ASSERT_MSG(id_from_cmdbuf < request_mapped_buffers.size(), "Mapped Buffer ID out of range!");
     return request_mapped_buffers[id_from_cmdbuf];
 }
 
-MappedBuffer::MappedBuffer(Process& process, u32 descriptor, VAddr address, u32 id)
+MappedBuffer::MappedBuffer(const Process& process, u32 descriptor, VAddr address, u32 id)
     : process(process), address(address), id(id) {
     IPC::MappedBufferDescInfo desc{descriptor};
     size = desc.size;
