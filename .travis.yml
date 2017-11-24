@@ -25,6 +25,8 @@ matrix:
       env: NAME="macos build"
       sudo: false
       osx_image: xcode7.3
+      before_install:
+        - rvm get head
       install: "./.travis/macos/deps.sh"
       script: "./.travis/macos/build.sh"
       after_success: "./.travis/macos/upload.sh"
