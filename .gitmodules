@@ -13,6 +13,9 @@
 [submodule "dynarmic"]
 	path = externals/dynarmic
 	url = https://github.com/MerryMage/dynarmic.git
+[submodule "inih"]
+	path = externals/inih/inih
+	url = https://github.com/benhoyt/inih
 [submodule "xbyak"]
 	path = externals/xbyak
 	url = https://github.com/herumi/xbyak.git
