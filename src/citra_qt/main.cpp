@@ -163,6 +163,10 @@ void GMainWindow::InitializeWidgets() {
     message_label->setAlignment(Qt::AlignLeft);
     statusBar()->addPermanentWidget(message_label, 1);
 
+    progress_bar = new QProgressBar();
+    progress_bar->hide();
+    statusBar()->addPermanentWidget(progress_bar);
+
     emu_speed_label = new QLabel();
     emu_speed_label->setToolTip(tr("Current emulation speed. Values higher or lower than 100% "
                                    "indicate emulation is running faster or slower than a 3DS."));
@@ -338,6 +342,8 @@ void GMainWindow::ConnectWidgetEvents() {
     connect(this, SIGNAL(EmulationStopping()), render_window, SLOT(OnEmulationStopping()));
 
     connect(&status_bar_update_timer, &QTimer::timeout, this, &GMainWindow::UpdateStatusBar);
+
+    connect(this, &GMainWindow::UpdateProgress, this, &GMainWindow::OnUpdateProgress);
 }
 
 void GMainWindow::ConnectMenuEvents() {
@@ -710,13 +716,8 @@ void GMainWindow::OnMenuInstallCIA() {
         return;
 
     ui.action_Install_CIA->setEnabled(false);
-
-    // update progress
-    connect(this, &GMainWindow::UpdateProgress, this, &GMainWindow::OnUpdateProgress);
+    progress_bar->show();
     watcher = new QFutureWatcher<Service::AM::InstallStatus>;
-    progress_bar = new QProgressBar();
-    this->statusBar()->addWidget(progress_bar);
-
     QFuture<Service::AM::InstallStatus> f = QtConcurrent::run([&, filepath] {
         const auto cia_progress = [&](size_t written, size_t total) {
             emit UpdateProgress(written, total);
@@ -734,7 +735,8 @@ void GMainWindow::OnUpdateProgress(size_t written, size_t total) {
 }
 
 void GMainWindow::OnCIAInstallFinished() {
-    this->statusBar()->removeWidget(progress_bar);
+    progress_bar->hide();
+    progress_bar->setValue(0);
     switch (watcher->future()) {
     case Service::AM::InstallStatus::Success:
         this->statusBar()->showMessage(tr("The file has been installed successfully."));
