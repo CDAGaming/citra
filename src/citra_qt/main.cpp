@@ -759,6 +759,7 @@ void GMainWindow::OnCIAInstallFinished() {
                                  "before being used with Citra. A real 3DS is required."));
         break;
     }
+    delete watcher;
     ui.action_Install_CIA->setEnabled(true);
 }
 
