@@ -187,7 +187,7 @@ private:
     bool defer_update_prompt = false;
 
     QAction* actions_recent_files[max_recent_files_item];
-    
+
     // Native Windows
     WindowsExtras* windows_extras;
 
