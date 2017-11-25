@@ -7,4 +7,4 @@ sudo apt-get remove -y postgresql-9.3
 sudo apt-get remove -y postgresql-9.4
 sudo apt-get remove -y postgresql-9.4
 sudo apt-get update -q
-sudo apt-get upgrade -q -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold
+sudo apt-get upgrade -q -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"
