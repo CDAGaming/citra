@@ -5,30 +5,31 @@
 #pragma once
 
 #include <memory>
-#include <QFutureWatcher>
 #include <QMainWindow>
 #include <QTimer>
-#include <QtWidgets/qprogressbar.h>
 #include "core/core.h"
 #include "core/hle/service/am/am.h"
 #include "ui_main.h"
 
+class AboutDialog;
 class Config;
+class QProgressBar;
 class EmuThread;
 class GameList;
 class GImageInfo;
-class GPUCommandStreamWidget;
 class GPUCommandListWidget;
+class GPUCommandStreamWidget;
 class GraphicsBreakPointsWidget;
 class GraphicsTracingWidget;
 class GraphicsVertexShaderWidget;
 class GRenderWindow;
 class MicroProfileDialog;
 class ProfilerWidget;
+template <typename>
+class QFutureWatcher;
 class RegistersWidget;
 class Updater;
 class WaitTreeWidget;
-class AboutDialog;
 
 class GMainWindow : public QMainWindow {
     Q_OBJECT
@@ -159,7 +160,6 @@ private:
     QFutureWatcher<Service::AM::InstallStatus>* watcher = nullptr;
 
     // Status bar elements
-
     QProgressBar* progress_bar = nullptr;
     QLabel* message_label = nullptr;
     QLabel* emu_speed_label = nullptr;
