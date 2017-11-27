@@ -13,7 +13,6 @@
 
 class AboutDialog;
 class Config;
-class QProgressBar;
 class EmuThread;
 class GameList;
 class GImageInfo;
@@ -27,6 +26,7 @@ class MicroProfileDialog;
 class ProfilerWidget;
 template <typename>
 class QFutureWatcher;
+class QProgressBar;
 class RegistersWidget;
 class Updater;
 class WaitTreeWidget;
