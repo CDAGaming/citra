@@ -5,12 +5,14 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/CMakeModules)
 
 add_executable(citra-qt
     Info.plist
+    camera/still_image_camera.cpp
     aboutdialog.cpp
     aboutdialog.h
     bootmanager.cpp
     bootmanager.h
     citra-qt.rc
     configuration/config.cpp
+    camera/still_image_camera.h
     configuration/config.h
     configuration/configure_audio.cpp
     configuration/configure_audio.h
