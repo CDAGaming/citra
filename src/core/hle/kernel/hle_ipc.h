@@ -69,7 +69,10 @@ public:
 
     // interface for service
     void Read(void* dest_buffer, size_t offset, size_t size);
-    void Write(void* src_buffer, size_t offset, size_t size);
+    void Write(const void* src_buffer, size_t offset, size_t size);
+    size_t GetSize() const {
+        return size;
+    }
 
     // interface for ipc helper
     u32 GenerateDescriptor() const {

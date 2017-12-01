@@ -203,7 +203,7 @@ void MappedBuffer::Read(void* dest_buffer, size_t offset, size_t size) {
     Memory::ReadBlock(*process, address + offset, dest_buffer, size);
 }
 
-void MappedBuffer::Write(void* src_buffer, size_t offset, size_t size) {
+void MappedBuffer::Write(const void* src_buffer, size_t offset, size_t size) {
     ASSERT(perms & IPC::W);
     ASSERT(offset + size <= this->size);
     Memory::WriteBlock(*process, address + offset, src_buffer, size);
