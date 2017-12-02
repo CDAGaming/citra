@@ -10,11 +10,14 @@
 #define QT_NO_OPENGL
 #include <QDesktopWidget>
 #include <QFileDialog>
+#include <QFutureWatcher>
 #include <QMessageBox>
+#include <QtConcurrent/QtConcurrentRun>
 #include <QtGui>
 #include <QtWidgets>
 #include "citra_qt/aboutdialog.h"
 #include "citra_qt/bootmanager.h"
+#include "citra_qt/camera/still_image_camera.h"
 #include "citra_qt/configuration/config.h"
 #include "citra_qt/configuration/configure_dialog.h"
 #include "citra_qt/debugger/graphics/graphics.h"
@@ -95,6 +98,9 @@ void GMainWindow::ShowCallouts() {
 }
 
 GMainWindow::GMainWindow() : config(new Config()), emu_thread(nullptr) {
+    // register size_t to use in slots and signals
+    qRegisterMetaType<size_t>("size_t");
+
     Pica::g_debug_context = Pica::DebugContext::Construct();
     setAcceptDrops(true);
     ui.setupUi(this);
@@ -161,6 +167,10 @@ void GMainWindow::InitializeWidgets() {
     message_label->setContentsMargins(4, 0, 4, 0);
     message_label->setAlignment(Qt::AlignLeft);
     statusBar()->addPermanentWidget(message_label, 1);
+
+    progress_bar = new QProgressBar();
+    progress_bar->hide();
+    statusBar()->addPermanentWidget(progress_bar);
 
     emu_speed_label = new QLabel();
     emu_speed_label->setToolTip(tr("Current emulation speed. Values higher or lower than 100% "
@@ -346,11 +356,14 @@ void GMainWindow::ConnectWidgetEvents() {
     connect(this, SIGNAL(EmulationStopping()), render_window, SLOT(OnEmulationStopping()));
 
     connect(&status_bar_update_timer, &QTimer::timeout, this, &GMainWindow::UpdateStatusBar);
+
+    connect(this, &GMainWindow::UpdateProgress, this, &GMainWindow::OnUpdateProgress);
 }
 
 void GMainWindow::ConnectMenuEvents() {
     // File
     connect(ui.action_Load_File, &QAction::triggered, this, &GMainWindow::OnMenuLoadFile);
+    connect(ui.action_Install_CIA, &QAction::triggered, this, &GMainWindow::OnMenuInstallCIA);
     connect(ui.action_Select_Game_List_Root, &QAction::triggered, this,
             &GMainWindow::OnMenuSelectGameListRoot);
     connect(ui.action_Exit, &QAction::triggered, this, &QMainWindow::close);
@@ -585,7 +598,9 @@ void GMainWindow::BootGame(const QString& filename) {
 
     current_game_path = filename;
     emulation_running = true;
-    ToggleFullscreen();
+    if (ui.action_Fullscreen->isChecked()) {
+        ShowFullscreen();
+    }
     OnStartGame();
 }
 
@@ -710,6 +725,61 @@ void GMainWindow::OnMenuSelectGameListRoot() {
     }
 }
 
+void GMainWindow::OnMenuInstallCIA() {
+    QString filepath = QFileDialog::getOpenFileName(
+        this, tr("Load File"), UISettings::values.roms_path,
+        tr("3DS Installation File (*.CIA*)") + ";;" + tr("All Files (*.*)"));
+    if (filepath.isEmpty())
+        return;
+
+    ui.action_Install_CIA->setEnabled(false);
+    progress_bar->show();
+    watcher = new QFutureWatcher<Service::AM::InstallStatus>;
+    QFuture<Service::AM::InstallStatus> f = QtConcurrent::run([&, filepath] {
+        const auto cia_progress = [&](size_t written, size_t total) {
+            emit UpdateProgress(written, total);
+        };
+        return Service::AM::InstallCIA(filepath.toStdString(), cia_progress);
+    });
+    connect(watcher, &QFutureWatcher<Service::AM::InstallStatus>::finished, this,
+            &GMainWindow::OnCIAInstallFinished);
+    watcher->setFuture(f);
+}
+
+void GMainWindow::OnUpdateProgress(size_t written, size_t total) {
+    progress_bar->setMaximum(total);
+    progress_bar->setValue(written);
+}
+
+void GMainWindow::OnCIAInstallFinished() {
+    progress_bar->hide();
+    progress_bar->setValue(0);
+    switch (watcher->future()) {
+    case Service::AM::InstallStatus::Success:
+        this->statusBar()->showMessage(tr("The file has been installed successfully."));
+        break;
+    case Service::AM::InstallStatus::ErrorFailedToOpenFile:
+        QMessageBox::critical(this, tr("Unable to open File"),
+                              tr("Could not open the selected file"));
+        break;
+    case Service::AM::InstallStatus::ErrorAborted:
+        QMessageBox::critical(
+            this, tr("Installation aborted"),
+            tr("The installation was aborted. Please see the log for more details"));
+        break;
+    case Service::AM::InstallStatus::ErrorInvalid:
+        QMessageBox::critical(this, tr("Invalid File"), tr("The selected file is not a valid CIA"));
+        break;
+    case Service::AM::InstallStatus::ErrorEncrypted:
+        QMessageBox::critical(this, tr("Encrypted File"),
+                              tr("The file that you are trying to install must be decrypted "
+                                 "before being used with Citra. A real 3DS is required."));
+        break;
+    }
+    delete watcher;
+    ui.action_Install_CIA->setEnabled(true);
+}
+
 void GMainWindow::OnMenuRecentFile() {
     QAction* action = qobject_cast<QAction*>(sender());
     assert(action);
@@ -776,21 +846,33 @@ void GMainWindow::ToggleFullscreen() {
         return;
     }
     if (ui.action_Fullscreen->isChecked()) {
-        if (ui.action_Single_Window_Mode->isChecked()) {
-            ui.menubar->hide();
-            statusBar()->hide();
-            showFullScreen();
-        } else {
-            render_window->showFullScreen();
-        }
+        ShowFullscreen();
     } else {
-        if (ui.action_Single_Window_Mode->isChecked()) {
-            statusBar()->setVisible(ui.action_Show_Status_Bar->isChecked());
-            ui.menubar->show();
-            showNormal();
-        } else {
-            render_window->showNormal();
-        }
+        HideFullscreen();
+    }
+}
+
+void GMainWindow::ShowFullscreen() {
+    if (ui.action_Single_Window_Mode->isChecked()) {
+        UISettings::values.geometry = saveGeometry();
+        ui.menubar->hide();
+        statusBar()->hide();
+        showFullScreen();
+    } else {
+        UISettings::values.renderwindow_geometry = render_window->saveGeometry();
+        render_window->showFullScreen();
+    }
+}
+
+void GMainWindow::HideFullscreen() {
+    if (ui.action_Single_Window_Mode->isChecked()) {
+        statusBar()->setVisible(ui.action_Show_Status_Bar->isChecked());
+        ui.menubar->show();
+        showNormal();
+        restoreGeometry(UISettings::values.geometry);
+    } else {
+        render_window->showNormal();
+        render_window->restoreGeometry(UISettings::values.renderwindow_geometry);
     }
 }
 
@@ -1079,6 +1161,8 @@ int main(int argc, char* argv[]) {
     GMainWindow main_window;
     // After settings have been loaded by GMainWindow, apply the filter
     log_filter.ParseFilterString(Settings::values.log_filter);
+
+    Camera::RegisterFactory("image", std::make_unique<Camera::StillImageCameraFactory>());
 
     main_window.show();
     main_window.ShowWindowsExtras();

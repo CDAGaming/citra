@@ -4,6 +4,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/CMakeModules)
 
 set(SRCS
+            camera/still_image_camera.cpp
             configuration/config.cpp
             configuration/configure_audio.cpp
             configuration/configure_debug.cpp
@@ -37,6 +38,7 @@ set(SRCS
             )
 
 set(HEADERS
+            camera/still_image_camera.h
             configuration/config.h
             configuration/configure_audio.h
             configuration/configure_debug.h
