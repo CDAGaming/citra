@@ -1268,6 +1268,7 @@ void GMainWindow::ChangeRoomState() {
         ui.action_Start_Room->setEnabled(true);
         ui.action_Stop_Room->setDisabled(true);
     }
+}
 
 void GMainWindow::ShowWindowsExtras() {
 #ifdef _WIN32
