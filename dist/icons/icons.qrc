@@ -6,5 +6,10 @@
     <file>disconnected.png</file>
     <file>failed.png</file>
     <file>lock.png</file>
+    <file>citra.png</file>
+    <file>play_white.png</file>
+    <file>pause_white.png</file>
+    <file>stop_white.png</file>
+    <file>restart_white.png</file>
   </qresource>
 </RCC>

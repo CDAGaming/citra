@@ -4,6 +4,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/CMakeModules)
 
 set(SRCS
+            camera/still_image_camera.cpp
             configuration/config.cpp
             configuration/configure_audio.cpp
             configuration/configure_debug.cpp
@@ -44,6 +45,7 @@ set(SRCS
             )
 
 set(HEADERS
+            camera/still_image_camera.h
             configuration/config.h
             configuration/configure_audio.h
             configuration/configure_debug.h
@@ -105,6 +107,10 @@ set(UIS
             multiplayer/client_room.ui
             multiplayer/host_room.ui
             )
+if(WIN32)
+  list(APPEND SRCS windowsextras.cpp)
+  list(APPEND HEADERS windowsextras.h)
+endif()
 
 file(GLOB_RECURSE ICONS ${CMAKE_SOURCE_DIR}/dist/icons/*)
 file(GLOB_RECURSE THEMES ${CMAKE_SOURCE_DIR}/dist/qt_themes/*)
@@ -128,6 +134,9 @@ endif()
 target_link_libraries(citra-qt PRIVATE audio_core common core input_common network video_core)
 target_link_libraries(citra-qt PRIVATE Boost::boost glad nihstro-headers Qt5::OpenGL Qt5::Widgets)
 target_link_libraries(citra-qt PRIVATE ${PLATFORM_LIBRARIES} Threads::Threads)
+if(WIN32)
+  target_link_libraries(citra-qt PRIVATE Qt5::WinExtras)
+endif()
 
 if(UNIX AND NOT APPLE)
     install(TARGETS citra-qt RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")

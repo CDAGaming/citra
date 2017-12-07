@@ -34,6 +34,7 @@ class QProgressBar;
 class RegistersWidget;
 class Updater;
 class WaitTreeWidget;
+class WindowsExtras;
 
 // Multiplayer forward declarations
 class Lobby;
@@ -65,6 +66,8 @@ public:
     void ChangeRoomState();
 
     GameList* game_list;
+    void ShowWindowsExtras();
+
     GMainWindow();
     ~GMainWindow();
 
@@ -102,6 +105,7 @@ private:
     void InitializeDebugWidgets();
     void InitializeRecentFileMenuActions();
     void InitializeHotkeys();
+    void InitializeWindowsExtras();
 
     void SetDefaultUIGeometry();
     void RestoreUIState();
@@ -153,6 +157,8 @@ private slots:
     void OnStartGame();
     void OnPauseGame();
     void OnStopGame();
+    void OnRestartGame();
+    void OnResumeGame();
     /// Called whenever a user selects a game in the game list widget.
     void OnGameListLoadFile(QString game_path);
     void OnGameListOpenSaveFolder(u64 program_id);
@@ -170,6 +176,8 @@ private slots:
     void OnToggleFilterBar();
     void OnDisplayTitleBars(bool);
     void ToggleFullscreen();
+    void ShowFullscreen();
+    void HideFullscreen();
     void ToggleWindowMode();
     void OnCreateGraphicsSurfaceViewer();
     void OnCoreError(Core::System::ResultStatus, std::string);
@@ -181,6 +189,10 @@ private slots:
 
 private:
     void UpdateStatusBar();
+    void UpdateWindowsExtras();
+
+    // String Used to Store the Filename, Used for Restarting Emulation
+    QString current_game_path;
 
     Ui::MainWindow ui;
 
@@ -227,6 +239,9 @@ private:
     Network::RoomMember::CallbackHandle<Network::RoomMember::State> state_callback_handle;
 
     QAction* actions_recent_files[max_recent_files_item];
+
+    // Windows Specific Functionality (Used for Thumbnail Toolbar)
+    WindowsExtras* windows_extras;
 
 protected:
     void dropEvent(QDropEvent* event) override;
