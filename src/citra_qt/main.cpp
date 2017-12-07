@@ -32,6 +32,9 @@
 #include "citra_qt/hotkeys.h"
 #include "citra_qt/main.h"
 #include "citra_qt/ui_settings.h"
+#ifdef _WIN32
+#include "citra_qt/windowsextras.h"
+#endif
 #include "citra_qt/updater/updater.h"
 #include "common/logging/backend.h"
 #include "common/logging/filter.h"
@@ -106,6 +109,7 @@ GMainWindow::GMainWindow() : config(new Config()), emu_thread(nullptr) {
     InitializeDebugWidgets();
     InitializeRecentFileMenuActions();
     InitializeHotkeys();
+    InitializeWindowsExtras();
     ShowUpdaterWidgets();
 
     SetDefaultUIGeometry();
@@ -285,6 +289,15 @@ void GMainWindow::InitializeHotkeys() {
             ToggleFullscreen();
         }
     });
+}
+
+void GMainWindow::InitializeWindowsExtras() {
+#ifdef _WIN32
+    windows_extras = new WindowsExtras(this);
+    connect(windows_extras, &WindowsExtras::ClickPlayPause, this, &GMainWindow::OnResumeGame);
+    connect(windows_extras, &WindowsExtras::ClickStop, this, &GMainWindow::OnStopGame);
+    connect(windows_extras, &WindowsExtras::ClickRestart, this, &GMainWindow::OnRestartGame);
+#endif
 }
 
 void GMainWindow::ShowUpdaterWidgets() {
@@ -582,6 +595,7 @@ void GMainWindow::BootGame(const QString& filename) {
     render_window->show();
     render_window->setFocus();
 
+    current_game_path = filename;
     emulation_running = true;
     ToggleFullscreen();
     OnStartGame();
@@ -793,6 +807,8 @@ void GMainWindow::OnStartGame() {
 
     ui.action_Pause->setEnabled(true);
     ui.action_Stop->setEnabled(true);
+
+    UpdateWindowsExtras();
 }
 
 void GMainWindow::OnPauseGame() {
@@ -801,10 +817,25 @@ void GMainWindow::OnPauseGame() {
     ui.action_Start->setEnabled(true);
     ui.action_Pause->setEnabled(false);
     ui.action_Stop->setEnabled(true);
+
+    UpdateWindowsExtras();
 }
 
 void GMainWindow::OnStopGame() {
     ShutdownGame();
+    UpdateWindowsExtras();
+}
+
+void GMainWindow::OnRestartGame() {
+    BootGame(current_game_path);
+}
+
+void GMainWindow::OnResumeGame() {
+    if (emu_thread->IsRunning()) {
+        OnPauseGame();
+    } else {
+        OnStartGame();
+    }
 }
 
 void GMainWindow::ToggleFullscreen() {
@@ -901,6 +932,20 @@ void GMainWindow::UpdateStatusBar() {
     emu_speed_label->setVisible(true);
     game_fps_label->setVisible(true);
     emu_frametime_label->setVisible(true);
+}
+
+void GMainWindow::UpdateWindowsExtras() {
+#ifdef _WIN32
+    if (emulation_running) {
+        if (ui.action_Pause->isEnabled()) {
+            windows_extras->UpdatePlay();
+        } else {
+            windows_extras->UpdatePause();
+        }
+    } else {
+        windows_extras->UpdateStop();
+    }
+#endif
 }
 
 void GMainWindow::OnCoreError(Core::System::ResultStatus result, std::string details) {
@@ -1070,6 +1115,12 @@ void GMainWindow::UpdateUITheme() {
     }
 }
 
+void GMainWindow::ShowWindowsExtras() {
+#ifdef _WIN32
+    windows_extras->Show();
+#endif
+}
+
 #ifdef main
 #undef main
 #endif
@@ -1097,5 +1148,6 @@ int main(int argc, char* argv[]) {
     log_filter.ParseFilterString(Settings::values.log_filter);
 
     main_window.show();
+    main_window.ShowWindowsExtras();
     return app.exec();
 }
