@@ -26,6 +26,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/scm_rev.cpp.in" "${CMAKE_CURRENT_SOU
 
 set(SRCS
             break_points.cpp
+            crash_handler.cpp
             file_util.cpp
             hash.cpp
             logging/filter.cpp
@@ -54,6 +55,7 @@ set(HEADERS
             common_funcs.h
             common_paths.h
             common_types.h
+            crash_handler.h
             file_util.h
             hash.h
             linear_disk_cache.h
@@ -78,6 +80,7 @@ set(HEADERS
             thread_queue_list.h
             threadsafe_queue.h
             timer.h
+            ui_util.h
             vector_math.h
             )
 
@@ -90,6 +93,20 @@ if(ARCHITECTURE_x86_64)
             x64/cpu_detect.h
             x64/xbyak_abi.h
             x64/xbyak_util.h
+            )
+endif()
+
+if (WIN32)
+    set(SRCS ${SRCS}
+            ui_util_windows.cpp
+            )
+elseif (APPLE)
+    set(SRCS ${SRCS}
+            ui_util_macos.mm
+            )
+else()
+    set(SRCS ${SRCS}
+            ui_util_linux.cpp
             )
 endif()
 
