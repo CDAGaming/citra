@@ -8,6 +8,7 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#include <vector>
 #include "core/hle/ipc.h"
 #include "core/hle/kernel/handle_table.h"
 #include "core/hle/kernel/hle_ipc.h"
@@ -113,13 +114,21 @@ public:
     void PushMoveHandles(H... handles);
 
     template <typename... O>
-    void PushObjects(Kernel::SharedPtr<O>... pointers);
+    void PushCopyObjects(Kernel::SharedPtr<O>... pointers);
+
+    template <typename... O>
+    void PushMoveObjects(Kernel::SharedPtr<O>... pointers);
 
     void PushCurrentPIDHandle();
 
-    void PushStaticBuffer(VAddr buffer_vaddr, size_t size, u8 buffer_id);
+    [[deprecated]] void PushStaticBuffer(VAddr buffer_vaddr, size_t size, u8 buffer_id);
+    void PushStaticBuffer(const std::vector<u8>& buffer, u8 buffer_id);
 
-    void PushMappedBuffer(VAddr buffer_vaddr, size_t size, MappedBufferPermissions perms);
+    [[deprecated]] void PushMappedBuffer(VAddr buffer_vaddr, size_t size,
+                                         MappedBufferPermissions perms);
+
+    /// Pushes an HLE MappedBuffer interface back to unmapped the buffer.
+    void PushMappedBuffer(const Kernel::MappedBuffer& mapped_buffer);
 };
 
 /// Push ///
@@ -181,7 +190,12 @@ inline void RequestBuilder::PushMoveHandles(H... handles) {
 }
 
 template <typename... O>
-inline void RequestBuilder::PushObjects(Kernel::SharedPtr<O>... pointers) {
+inline void RequestBuilder::PushCopyObjects(Kernel::SharedPtr<O>... pointers) {
+    PushCopyHandles(context->AddOutgoingHandle(std::move(pointers))...);
+}
+
+template <typename... O>
+inline void RequestBuilder::PushMoveObjects(Kernel::SharedPtr<O>... pointers) {
     PushMoveHandles(context->AddOutgoingHandle(std::move(pointers))...);
 }
 
@@ -195,10 +209,25 @@ inline void RequestBuilder::PushStaticBuffer(VAddr buffer_vaddr, size_t size, u8
     Push(buffer_vaddr);
 }
 
+inline void RequestBuilder::PushStaticBuffer(const std::vector<u8>& buffer, u8 buffer_id) {
+    ASSERT_MSG(buffer_id < MAX_STATIC_BUFFERS, "Invalid static buffer id");
+
+    Push(StaticBufferDesc(buffer.size(), buffer_id));
+    // This address will be replaced by the correct static buffer address during IPC translation.
+    Push<VAddr>(0xDEADC0DE);
+
+    context->AddStaticBuffer(buffer_id, buffer);
+}
+
 inline void RequestBuilder::PushMappedBuffer(VAddr buffer_vaddr, size_t size,
                                              MappedBufferPermissions perms) {
     Push(MappedBufferDesc(size, perms));
     Push(buffer_vaddr);
+}
+
+inline void RequestBuilder::PushMappedBuffer(const Kernel::MappedBuffer& mapped_buffer) {
+    Push(mapped_buffer.GenerateDescriptor());
+    Push(mapped_buffer.GetId());
 }
 
 class RequestParser : public RequestHelperBase {
@@ -295,17 +324,23 @@ public:
      * @brief Pops the static buffer vaddr
      * @return                  The virtual address of the buffer
      * @param[out] data_size    If non-null, the pointed value will be set to the size of the data
-     * @param[out] useStaticBuffersToGetVaddr Indicates if we should read the vaddr from the static
-     * buffers (which is the correct thing to do, but no service presently implement it) instead of
-     * using the same value as the process who sent the request
-     * given by the source process
      *
-     * Static buffers must be set up before any IPC request using those is sent.
+     * In real services, static buffers must be set up before any IPC request using those is sent.
      * It is the duty of the process (usually services) to allocate and set up the receiving static
-     * buffer information
+     * buffer information. Our HLE services do not need to set up the buffers beforehand.
      * Please note that the setup uses virtual addresses.
      */
-    VAddr PopStaticBuffer(size_t* data_size = nullptr, bool useStaticBuffersToGetVaddr = false);
+    [[deprecated]] VAddr PopStaticBuffer(size_t* data_size);
+
+    /**
+     * @brief Pops a static buffer from the IPC request buffer.
+     * @return The buffer that was copied from the IPC request originator.
+     *
+     * In real services, static buffers must be set up before any IPC request using those is sent.
+     * It is the duty of the process (usually services) to allocate and set up the receiving static
+     * buffer information. Our HLE services do not need to set up the buffers beforehand.
+     */
+    const std::vector<u8>& PopStaticBuffer();
 
     /**
      * @brief Pops the mapped buffer vaddr
@@ -315,8 +350,11 @@ public:
      * @param[out] buffer_perms If non-null, the pointed value will be set to the permissions of the
      * buffer
      */
-    VAddr PopMappedBuffer(size_t* data_size = nullptr,
-                          MappedBufferPermissions* buffer_perms = nullptr);
+    [[deprecated]] VAddr PopMappedBuffer(size_t* data_size,
+                                         MappedBufferPermissions* buffer_perms = nullptr);
+
+    /// Pops a mapped buffer descriptor with its vaddr and resolves it to an HLE interface
+    Kernel::MappedBuffer& PopMappedBuffer();
 
     /**
      * @brief Reads the next normal parameters as a struct, by copying it
@@ -451,21 +489,21 @@ inline std::tuple<Kernel::SharedPtr<T>...> RequestParser::PopObjects() {
                                           std::index_sequence_for<T...>{});
 }
 
-inline VAddr RequestParser::PopStaticBuffer(size_t* data_size, bool useStaticBuffersToGetVaddr) {
+inline VAddr RequestParser::PopStaticBuffer(size_t* data_size) {
     const u32 sbuffer_descriptor = Pop<u32>();
     StaticBufferDescInfo bufferInfo{sbuffer_descriptor};
     if (data_size != nullptr)
         *data_size = bufferInfo.size;
-    if (!useStaticBuffersToGetVaddr)
-        return Pop<VAddr>();
-    else {
-        ASSERT_MSG(0, "remove the assert if multiprocess/IPC translation are implemented.");
-        // The buffer has already been copied to the static buffer by the kernel during
-        // translation
-        Pop<VAddr>(); // Pop the calling process buffer address
-                      // and get the vaddr from the static buffers
-        return cmdbuf[(0x100 >> 2) + bufferInfo.buffer_id * 2 + 1];
-    }
+    return Pop<VAddr>();
+}
+
+inline const std::vector<u8>& RequestParser::PopStaticBuffer() {
+    const u32 sbuffer_descriptor = Pop<u32>();
+    // Pop the address from the incoming request buffer
+    Pop<VAddr>();
+
+    StaticBufferDescInfo buffer_info{sbuffer_descriptor};
+    return context->GetStaticBuffer(buffer_info.buffer_id);
 }
 
 inline VAddr RequestParser::PopMappedBuffer(size_t* data_size,
@@ -477,6 +515,13 @@ inline VAddr RequestParser::PopMappedBuffer(size_t* data_size,
     if (buffer_perms != nullptr)
         *buffer_perms = bufferInfo.perms;
     return Pop<VAddr>();
+}
+
+inline Kernel::MappedBuffer& RequestParser::PopMappedBuffer() {
+    u32 mapped_buffer_descriptor = Pop<u32>();
+    ASSERT_MSG(GetDescriptorType(mapped_buffer_descriptor) == MappedBuffer,
+               "Tried to pop mapped buffer but the descriptor is not a mapped buffer descriptor");
+    return context->GetMappedBuffer(Pop<u32>());
 }
 
 } // namespace IPC
