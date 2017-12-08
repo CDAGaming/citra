@@ -464,7 +464,7 @@ static ResultCode ReceiveIPCRequest(Kernel::SharedPtr<Kernel::ServerSession> ser
     VAddr source_address = server_session->currently_handling->GetCommandBufferAddress();
 
     ResultCode translation_result = Kernel::TranslateCommandBuffer(
-        server_session->currently_handling, thread, source_address, target_address);
+        server_session->currently_handling, thread, source_address, target_address, false);
 
     // If a translation error occurred, immediately resume the client thread.
     if (translation_result.IsError()) {
@@ -527,7 +527,7 @@ static ResultCode ReplyAndReceive(s32* index, VAddr handles_address, s32 handle_
         VAddr target_address = request_thread->GetCommandBufferAddress();
 
         ResultCode translation_result = Kernel::TranslateCommandBuffer(
-            Kernel::GetCurrentThread(), request_thread, source_address, target_address);
+            Kernel::GetCurrentThread(), request_thread, source_address, target_address, true);
 
         // Note: The real kernel seems to always panic if the Server->Client buffer translation
         // fails for whatever reason.
@@ -1384,8 +1384,8 @@ static const FunctionDef SVC_Table[] = {
     {0x56, nullptr, "StopDma"},
     {0x57, nullptr, "GetDmaState"},
     {0x58, nullptr, "RestartDma"},
-    {0x59, nullptr, "Unknown"},
-    {0x5A, nullptr, "Unknown"},
+    {0x59, nullptr, "SetGpuProt"},
+    {0x5A, nullptr, "SetWifiEnabled"},
     {0x5B, nullptr, "Unknown"},
     {0x5C, nullptr, "Unknown"},
     {0x5D, nullptr, "Unknown"},
