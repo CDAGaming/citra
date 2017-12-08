@@ -8,28 +8,33 @@
 #include <QMainWindow>
 #include <QTimer>
 #include "core/core.h"
+#include "core/hle/service/am/am.h"
 #include "ui_main.h"
 
 namespace Common {
 struct CrashInformation;
 }
 
+class AboutDialog;
 class Config;
 class EmuThread;
 class GameList;
 class GImageInfo;
-class GPUCommandStreamWidget;
 class GPUCommandListWidget;
+class GPUCommandStreamWidget;
 class GraphicsBreakPointsWidget;
 class GraphicsTracingWidget;
 class GraphicsVertexShaderWidget;
 class GRenderWindow;
 class MicroProfileDialog;
 class ProfilerWidget;
+template <typename>
+class QFutureWatcher;
+class QProgressBar;
 class RegistersWidget;
 class Updater;
 class WaitTreeWidget;
-class AboutDialog;
+class WindowsExtras;
 
 class GMainWindow : public QMainWindow {
     Q_OBJECT
@@ -48,6 +53,7 @@ class GMainWindow : public QMainWindow {
 public:
     void filterBarSetChecked(bool state);
     void UpdateUITheme();
+    void ShowWindowsExtras();
     GMainWindow();
     ~GMainWindow();
 
@@ -68,12 +74,14 @@ signals:
      * system emulation handles and memory are still valid, but are about become invalid.
      */
     void EmulationStopping();
+    void UpdateProgress(size_t written, size_t total);
 
 private:
     void InitializeWidgets();
     void InitializeDebugWidgets();
     void InitializeRecentFileMenuActions();
     void InitializeHotkeys();
+    void InitializeWindowsExtras();
 
     void SetDefaultUIGeometry();
     void RestoreUIState();
@@ -125,10 +133,15 @@ private slots:
     void OnStartGame();
     void OnPauseGame();
     void OnStopGame();
+    void OnRestartGame();
+    void OnResumeGame();
     /// Called whenever a user selects a game in the game list widget.
     void OnGameListLoadFile(QString game_path);
     void OnGameListOpenSaveFolder(u64 program_id);
     void OnMenuLoadFile();
+    void OnMenuInstallCIA();
+    void OnUpdateProgress(size_t written, size_t total);
+    void OnCIAInstallFinished();
     /// Called whenever a user selects the "File->Select Game List Root" menu item
     void OnMenuSelectGameListRoot();
     void OnMenuRecentFile();
@@ -137,6 +150,8 @@ private slots:
     void OnToggleFilterBar();
     void OnDisplayTitleBars(bool);
     void ToggleFullscreen();
+    void ShowFullscreen();
+    void HideFullscreen();
     void ToggleWindowMode();
     void OnCreateGraphicsSurfaceViewer();
     void OnCrashed(const Common::CrashInformation&);
@@ -149,13 +164,19 @@ private slots:
 
 private:
     void UpdateStatusBar();
+    void UpdateWindowsExtras();
+
+    // String Used to Store the Filename, Used for Restarting Emulation
+    QString current_game_path;
 
     Ui::MainWindow ui;
 
     GRenderWindow* render_window;
     GameList* game_list;
+    QFutureWatcher<Service::AM::InstallStatus>* watcher = nullptr;
 
     // Status bar elements
+    QProgressBar* progress_bar = nullptr;
     QLabel* message_label = nullptr;
     QLabel* emu_speed_label = nullptr;
     QLabel* game_fps_label = nullptr;
@@ -185,8 +206,13 @@ private:
 
     QAction* actions_recent_files[max_recent_files_item];
 
+    // Windows Specific Functionality (Used for Thumbnail Toolbar)
+    WindowsExtras* windows_extras;
+
 protected:
     void dropEvent(QDropEvent* event) override;
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dragMoveEvent(QDragMoveEvent* event) override;
 };
+
+Q_DECLARE_METATYPE(size_t);
