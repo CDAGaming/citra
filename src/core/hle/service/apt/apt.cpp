@@ -97,6 +97,8 @@ static constexpr size_t NumApplets = 29;
 static constexpr std::array<AppletTitleData, NumApplets> applet_titleids = {{
     {AppletId::HomeMenu, AppletId::None, 0x4003000008202, 0x4003000008F02, 0x4003000009802,
      0x4003000008202, 0x400300000A102, 0x400300000A902, 0x400300000B102},
+    {AppletId::AlternateMenu, AppletId::None, 0x4003000008102, 0x4003000008102, 0x4003000008102,
+     0x4003000008102, 0x4003000008102, 0x4003000008102, 0x4003000008102},
     {AppletId::Camera, AppletId::None, 0x4003000008402, 0x4003000009002, 0x4003000009902,
      0x4003000008402, 0x400300000A202, 0x400300000AA02, 0x400300000B202},
     {AppletId::FriendList, AppletId::None, 0x4003000008D02, 0x4003000009602, 0x4003000009F02,
@@ -110,9 +112,11 @@ static constexpr std::array<AppletTitleData, NumApplets> applet_titleids = {{
     {AppletId::Notifications, AppletId::None, 0x4003000008E02, 0x4003000009702, 0x400300000A002,
      0x4003000008E02, 0x400300000A802, 0x400300000B002, 0x400300000B802},
     {AppletId::Miiverse, AppletId::None, 0x400300000BC02, 0x400300000BD02, 0x400300000BE02,
-     0x400300000BC02, 0x0, 0x0, 0x0},
-    {AppletId::MiiversePost, AppletId::None, 0x4003000008302, 0x4003000008B02, 0x400300000BA02,
-     0x4003000008302, 0x0, 0x0, 0x0},
+     0x400300000BC02, 0x4003000009E02, 0x4003000009502, 0x400300000B902},
+    {AppletId::MiiversePost, AppletId::None, 0x400300000BA02, 0x400300000BA02, 0x400300000BA02,
+     0x400300000BA02, 0x400300000BA02, 0x400300000BA02, 0x400300000BA02}, // for older version
+    // {AppletId::MiiversePost, AppletId::None, 0x4003000008302, 0x4003000008B02, 0x400300000BA02,
+    //  0x4003000008302, 0x0, 0x0, 0x0},
     {AppletId::AmiiboSettings, AppletId::None, 0x4003000009502, 0x4003000009E02, 0x400300000B902,
      0x4003000009502, 0x0, 0x4003000008C02, 0x400300000BF02},
     {AppletId::SoftwareKeyboard1, AppletId::SoftwareKeyboard2, 0x400300000C002, 0x400300000C802,
@@ -130,7 +134,7 @@ static constexpr std::array<AppletTitleData, NumApplets> applet_titleids = {{
     {AppletId::Extrapad, AppletId::Extrapad2, 0x400300000CD02, 0x400300000CD02, 0x400300000CD02,
      0x400300000CD02, 0x400300000D502, 0x400300000D502, 0x400300000D502},
     {AppletId::Memolib, AppletId::Memolib2, 0x400300000F602, 0x400300000F602, 0x400300000F602,
-     0x400300000F602, 0x0, 0x0, 0x0},
+     0x400300000F602, 0x400300000F602, 0x400300000F602, 0x400300000F602},
     // TODO(Subv): Fill in the rest of the titleids
 }};
 
