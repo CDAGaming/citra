@@ -1,6 +1,9 @@
 #include <QApplication>
+#include <QDateTime>
+#include <QDir>
 #include <QHBoxLayout>
 #include <QKeyEvent>
+#include <QStandardPaths>
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 // Required for screen DPI information
@@ -9,6 +12,7 @@
 #endif
 
 #include "citra_qt/bootmanager.h"
+#include "common/crash_handler.h"
 #include "common/microprofile.h"
 #include "common/scm_rev.h"
 #include "common/string_util.h"
@@ -20,8 +24,17 @@
 #include "input_common/motion_emu.h"
 #include "network/network.h"
 
+static std::string GenerateMinidumpFilename() {
+    QString dir = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
+    QString file = QDateTime::currentDateTime().toString("'minidump-citra-'yyyyMMdd-HHmmss'.dmp'");
+    return QDir::toNativeSeparators(dir + "/" + file).toStdString();
+}
+
 EmuThread::EmuThread(GRenderWindow* render_window)
-    : exec_step(false), running(false), stop_run(false), render_window(render_window) {}
+    : exec_step(false), running(false), stop_run(false), render_window(render_window) {
+    // Custom types must be registered to be used with Qt signals/slots.
+    qRegisterMetaType<Common::CrashInformation>("Common::CrashInformation");
+}
 
 void EmuThread::run() {
     render_window->MakeCurrent();
@@ -30,38 +43,43 @@ void EmuThread::run() {
 
     stop_run = false;
 
-    // Holds whether the cpu was running during the last iteration,
-    // so that the DebugModeLeft signal can be emitted before the
-    // next execution step.
-    bool was_active = false;
-    while (!stop_run) {
-        if (running) {
-            if (!was_active)
-                emit DebugModeLeft();
+    Common::CrashHandler(
+        [&]() {
+            // Holds whether the cpu was running during the last iteration,
+            // so that the DebugModeLeft signal can be emitted before the
+            // next execution step.
+            bool was_active = false;
+            while (!stop_run) {
+                if (running) {
+                    if (!was_active)
+                        emit DebugModeLeft();
 
-            Core::System::ResultStatus result = Core::System::GetInstance().RunLoop();
-            if (result != Core::System::ResultStatus::Success) {
-                emit ErrorThrown(result, Core::System::GetInstance().GetStatusDetails());
+                    Core::System::ResultStatus result = Core::System::GetInstance().RunLoop();
+                    if (result != Core::System::ResultStatus::Success) {
+                        emit ErrorThrown(result, Core::System::GetInstance().GetStatusDetails());
+                    }
+
+                    was_active = running || exec_step;
+                    if (!was_active && !stop_run)
+                        emit DebugModeEntered();
+                } else if (exec_step) {
+                    if (!was_active)
+                        emit DebugModeLeft();
+
+                    exec_step = false;
+                    Core::System::GetInstance().SingleStep();
+                    emit DebugModeEntered();
+                    yieldCurrentThread();
+
+                    was_active = false;
+                } else {
+                    std::unique_lock<std::mutex> lock(running_mutex);
+                    running_cv.wait(lock, [this] { return IsRunning() || exec_step || stop_run; });
+                }
             }
-
-            was_active = running || exec_step;
-            if (!was_active && !stop_run)
-                emit DebugModeEntered();
-        } else if (exec_step) {
-            if (!was_active)
-                emit DebugModeLeft();
-
-            exec_step = false;
-            Core::System::GetInstance().SingleStep();
-            emit DebugModeEntered();
-            yieldCurrentThread();
-
-            was_active = false;
-        } else {
-            std::unique_lock<std::mutex> lock(running_mutex);
-            running_cv.wait(lock, [this] { return IsRunning() || exec_step || stop_run; });
-        }
-    }
+        },
+        [&](const Common::CrashInformation& crash_info) { emit Crashed(crash_info); },
+        GenerateMinidumpFilename());
 
     // Shutdown the core emulation
     Core::System::GetInstance().Shutdown();

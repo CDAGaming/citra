@@ -14,6 +14,10 @@
 #include "network/network.h"
 #include "ui_main.h"
 
+namespace Common {
+struct CrashInformation;
+}
+
 class AboutDialog;
 class Config;
 class ClickableLabel;
@@ -34,6 +38,7 @@ class QProgressBar;
 class RegistersWidget;
 class Updater;
 class WaitTreeWidget;
+class WindowsExtras;
 
 // Multiplayer forward declarations
 class Lobby;
@@ -63,8 +68,10 @@ public:
     void filterBarSetChecked(bool state);
     void UpdateUITheme();
     void ChangeRoomState();
+    void ShowWindowsExtras();
 
     GameList* game_list;
+
     GMainWindow();
     ~GMainWindow();
 
@@ -102,6 +109,7 @@ private:
     void InitializeDebugWidgets();
     void InitializeRecentFileMenuActions();
     void InitializeHotkeys();
+    void InitializeWindowsExtras();
 
     void SetDefaultUIGeometry();
     void RestoreUIState();
@@ -153,6 +161,8 @@ private slots:
     void OnStartGame();
     void OnPauseGame();
     void OnStopGame();
+    void OnRestartGame();
+    void OnResumeGame();
     /// Called whenever a user selects a game in the game list widget.
     void OnGameListLoadFile(QString game_path);
     void OnGameListOpenSaveFolder(u64 program_id);
@@ -174,6 +184,7 @@ private slots:
     void HideFullscreen();
     void ToggleWindowMode();
     void OnCreateGraphicsSurfaceViewer();
+    void OnCrashed(const Common::CrashInformation&);
     void OnCoreError(Core::System::ResultStatus, std::string);
     /// Called whenever a user selects Help->About Citra
     void OnMenuAboutCitra();
@@ -183,6 +194,10 @@ private slots:
 
 private:
     void UpdateStatusBar();
+    void UpdateWindowsExtras();
+
+    // String Used to Store the Filename, Used for Restarting Emulation
+    QString current_game_path;
 
     Ui::MainWindow ui;
 
@@ -229,6 +244,9 @@ private:
     Network::RoomMember::CallbackHandle<Network::RoomMember::State> state_callback_handle;
 
     QAction* actions_recent_files[max_recent_files_item];
+
+    // Windows Specific Functionality (Used for Thumbnail Toolbar)
+    WindowsExtras* windows_extras;
 
 protected:
     void dropEvent(QDropEvent* event) override;

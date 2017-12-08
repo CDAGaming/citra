@@ -4,6 +4,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/CMakeModules)
 
 set(SRCS
+            camera/still_image_camera.cpp
             configuration/config.cpp
             configuration/configure_audio.cpp
             configuration/configure_debug.cpp
@@ -13,6 +14,7 @@ set(SRCS
             configuration/configure_input.cpp
             configuration/configure_system.cpp
             configuration/configure_web.cpp
+            crash_dialog/crash_dialog.cpp
             debugger/graphics/graphics.cpp
             debugger/graphics/graphics_breakpoint_observer.cpp
             debugger/graphics/graphics_breakpoints.cpp
@@ -44,6 +46,7 @@ set(SRCS
             )
 
 set(HEADERS
+            camera/still_image_camera.h
             configuration/config.h
             configuration/configure_audio.h
             configuration/configure_debug.h
@@ -53,6 +56,7 @@ set(HEADERS
             configuration/configure_input.h
             configuration/configure_system.h
             configuration/configure_web.h
+            crash_dialog/crash_dialog.h
             debugger/graphics/graphics.h
             debugger/graphics/graphics_breakpoint_observer.h
             debugger/graphics/graphics_breakpoints.h
@@ -95,6 +99,7 @@ set(UIS
             configuration/configure_input.ui
             configuration/configure_system.ui
             configuration/configure_web.ui
+            crash_dialog/crash_dialog.ui
             debugger/registers.ui
             aboutdialog.ui
             hotkeys.ui
@@ -105,6 +110,10 @@ set(UIS
             multiplayer/client_room.ui
             multiplayer/host_room.ui
             )
+if(WIN32)
+  list(APPEND SRCS windowsextras.cpp)
+  list(APPEND HEADERS windowsextras.h)
+endif()
 
 file(GLOB_RECURSE ICONS ${CMAKE_SOURCE_DIR}/dist/icons/*)
 file(GLOB_RECURSE THEMES ${CMAKE_SOURCE_DIR}/dist/qt_themes/*)
@@ -126,8 +135,11 @@ else()
     add_executable(citra-qt ${SRCS} ${HEADERS} ${UI_HDRS} ${ICONS} ${THEMES})
 endif()
 target_link_libraries(citra-qt PRIVATE audio_core common core input_common network video_core)
-target_link_libraries(citra-qt PRIVATE Boost::boost glad nihstro-headers Qt5::OpenGL Qt5::Widgets)
+target_link_libraries(citra-qt PRIVATE Boost::boost fmt glad nihstro-headers Qt5::OpenGL Qt5::Widgets)
 target_link_libraries(citra-qt PRIVATE ${PLATFORM_LIBRARIES} Threads::Threads)
+if(WIN32)
+  target_link_libraries(citra-qt PRIVATE Qt5::WinExtras)
+endif()
 
 if(UNIX AND NOT APPLE)
     install(TARGETS citra-qt RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
