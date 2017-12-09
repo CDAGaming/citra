@@ -1,4 +1,5 @@
 set(SRCS
+            announce_multiplayer_session.cpp
             arm/dynarmic/arm_dynarmic.cpp
             arm/dynarmic/arm_dynarmic_cp15.cpp
             arm/dyncom/arm_dyncom.cpp
@@ -159,6 +160,8 @@ set(SRCS
             hle/service/ptm/ptm_sets.cpp
             hle/service/ptm/ptm_sysm.cpp
             hle/service/ptm/ptm_u.cpp
+            hle/service/pxi/pxi.cpp
+            hle/service/pxi/dev.cpp
             hle/service/qtm/qtm.cpp
             hle/service/qtm/qtm_s.cpp
             hle/service/qtm/qtm_sp.cpp
@@ -192,6 +195,7 @@ set(SRCS
 
 set(HEADERS
             3ds.h
+            announce_multiplayer_session.h
             arm/arm_interface.h
             arm/dynarmic/arm_dynarmic.h
             arm/dynarmic/arm_dynarmic_cp15.h
@@ -364,6 +368,8 @@ set(HEADERS
             hle/service/ptm/ptm_sets.h
             hle/service/ptm/ptm_sysm.h
             hle/service/ptm/ptm_u.h
+            hle/service/pxi/pxi.h
+            hle/service/pxi/dev.h
             hle/service/qtm/qtm.h
             hle/service/qtm/qtm_s.h
             hle/service/qtm/qtm_sp.h
