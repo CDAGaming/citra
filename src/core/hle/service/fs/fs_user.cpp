@@ -115,18 +115,18 @@ static void OpenFile(Service::Interface* self) {
  *      3 : File handle
  */
 static void OpenFileDirectly(Service::Interface* self) {
-    u32* cmd_buff = Kernel::GetCommandBuffer();
+    IPC::RequestParser rp(Kernel::GetCommandBuffer(), 0x803, 8, 4);
+    rp.Skip(1, false); // Transaction
 
-    auto archive_id = static_cast<FS::ArchiveIdCode>(cmd_buff[2]);
-    auto archivename_type = static_cast<FileSys::LowPathType>(cmd_buff[3]);
-    u32 archivename_size = cmd_buff[4];
-    auto filename_type = static_cast<FileSys::LowPathType>(cmd_buff[5]);
-    u32 filename_size = cmd_buff[6];
-    FileSys::Mode mode;
-    mode.hex = cmd_buff[7];
-    u32 attributes = cmd_buff[8]; // TODO(Link Mauve): do something with those attributes.
-    u32 archivename_ptr = cmd_buff[10];
-    u32 filename_ptr = cmd_buff[12];
+    auto archive_id = static_cast<FS::ArchiveIdCode>(rp.Pop<u32>());
+    auto archivename_type = static_cast<FileSys::LowPathType>(rp.Pop<u32>());
+    u32 archivename_size = rp.Pop<u32>();
+    auto filename_type = static_cast<FileSys::LowPathType>(rp.Pop<u32>());
+    u32 filename_size = rp.Pop<u32>();
+    FileSys::Mode mode{rp.Pop<u32>()};
+    u32 attributes = rp.Pop<u32>(); // TODO(Link Mauve): do something with those attributes.
+    u32 archivename_ptr = rp.PopStaticBuffer(nullptr);
+    u32 filename_ptr = rp.PopStaticBuffer(nullptr);
     FileSys::Path archive_path(archivename_type, archivename_size, archivename_ptr);
     FileSys::Path file_path(filename_type, filename_size, filename_ptr);
 
@@ -134,29 +134,30 @@ static void OpenFileDirectly(Service::Interface* self) {
               static_cast<u32>(archive_id), archive_path.DebugStr().c_str(),
               file_path.DebugStr().c_str(), mode.hex, attributes);
 
+    IPC::RequestBuilder rb = rp.MakeBuilder(1, 2);
+
     ResultVal<ArchiveHandle> archive_handle = OpenArchive(archive_id, archive_path);
     if (archive_handle.Failed()) {
         LOG_ERROR(Service_FS,
                   "Failed to get a handle for archive archive_id=0x%08X archive_path=%s",
                   static_cast<u32>(archive_id), archive_path.DebugStr().c_str());
-        cmd_buff[1] = archive_handle.Code().raw;
-        cmd_buff[3] = 0;
+        rb.Push(archive_handle.Code());
+        rb.PushMoveHandles(0);
         return;
     }
     SCOPE_EXIT({ CloseArchive(*archive_handle); });
 
     ResultVal<std::shared_ptr<File>> file_res =
         OpenFileFromArchive(*archive_handle, file_path, mode);
-    cmd_buff[1] = file_res.Code().raw;
+    rb.Push(file_res.Code());
     if (file_res.Succeeded()) {
         std::shared_ptr<File> file = *file_res;
         auto sessions = ServerSession::CreateSessionPair(file->GetName());
         file->ClientConnected(std::get<SharedPtr<ServerSession>>(sessions));
-
-        cmd_buff[3] =
-            Kernel::g_handle_table.Create(std::get<SharedPtr<ClientSession>>(sessions)).Unwrap();
+        rb.PushMoveHandles(
+            Kernel::g_handle_table.Create(std::get<SharedPtr<ClientSession>>(sessions)).Unwrap());
     } else {
-        cmd_buff[3] = 0;
+        rb.PushMoveHandles(0);
         LOG_ERROR(Service_FS, "failed to get a handle for file %s mode=%u attributes=%u",
                   file_path.DebugStr().c_str(), mode.hex, attributes);
     }
