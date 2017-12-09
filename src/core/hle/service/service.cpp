@@ -271,8 +271,8 @@ void Init() {
     PXI::InstallInterfaces(*SM::g_service_manager);
     NS::InstallInterfaces(*SM::g_service_manager);
     AC::InstallInterfaces(*SM::g_service_manager);
-    MIC::InstallInterfaces(*SM::g_service_manager);
     LDR::InstallInterfaces(*SM::g_service_manager);
+    MIC::InstallInterfaces(*SM::g_service_manager);
 
     FS::ArchiveInit();
     ACT::Init();
