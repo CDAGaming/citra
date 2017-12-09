@@ -265,7 +265,7 @@ void MIC_U::SetClientVersion(Kernel::HLERequestContext& ctx) {
     impl->SetClientVersion(ctx);
 }
 
-MIC_U::MIC_U() : ServiceFramework{"mic:u", 1}, impl{std::make_unique<Impl>()}  {
+MIC_U::MIC_U() : ServiceFramework{"mic:u", 1}, impl{std::make_unique<Impl>()} {
     static const FunctionInfo functions[] = {
         {0x00010042, &MIC_U::MapSharedMem, "MapSharedMem"},
         {0x00020000, &MIC_U::UnmapSharedMem, "UnmapSharedMem"},
