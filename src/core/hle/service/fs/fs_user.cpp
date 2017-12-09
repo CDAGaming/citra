@@ -152,8 +152,7 @@ static void OpenFileDirectly(Service::Interface* self) {
         std::shared_ptr<File> file = *file_res;
         auto sessions = ServerSession::CreateSessionPair(file->GetName());
         file->ClientConnected(std::get<SharedPtr<ServerSession>>(sessions));
-        rb.PushMoveHandles(
-            Kernel::g_handle_table.Create(file->Connect()).Unwrap();
+        rb.PushMoveHandles(Kernel::g_handle_table.Create(file->Connect()).Unwrap());
     } else {
         rb.PushMoveHandles(0);
         LOG_ERROR(Service_FS, "failed to get a handle for file %s mode=%u attributes=%u",
@@ -945,18 +944,18 @@ static void GetNumSeeds(Service::Interface* self) {
     rb.Push<u32>(0);
 }
 
- /*
- * FS_User::GetProgramLaunchInfo service function.
- *  Inputs:
- *      0 : 0x082F0040
- *      1 : Process ID
- *  Outputs:
- *      0 : 0x082F0140
- *      1 : Result of function, 0 on success, otherwise error code
- *      2-3 : Program ID
- *      4 : Media type
- *      5 : Unknown
- */
+/*
+* FS_User::GetProgramLaunchInfo service function.
+*  Inputs:
+*      0 : 0x082F0040
+*      1 : Process ID
+*  Outputs:
+*      0 : 0x082F0140
+*      1 : Result of function, 0 on success, otherwise error code
+*      2-3 : Program ID
+*      4 : Media type
+*      5 : Unknown
+*/
 static void GetProgramLaunchInfo(Service::Interface* self) {
     IPC::RequestParser rp(Kernel::GetCommandBuffer(), 0x82F, 1, 0);
 
