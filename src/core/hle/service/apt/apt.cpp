@@ -113,8 +113,9 @@ static constexpr std::array<AppletTitleData, NumApplets> applet_titleids = {{
      0x4003000008E02, 0x400300000A802, 0x400300000B002, 0x400300000B802},
     {AppletId::Miiverse, AppletId::None, 0x400300000BC02, 0x400300000BD02, 0x400300000BE02,
      0x400300000BC02, 0x4003000009E02, 0x4003000009502, 0x400300000B902},
+    // These values obtained from an older NS dump firmware 4.5
     {AppletId::MiiversePost, AppletId::None, 0x400300000BA02, 0x400300000BA02, 0x400300000BA02,
-     0x400300000BA02, 0x400300000BA02, 0x400300000BA02, 0x400300000BA02}, // for older version
+     0x400300000BA02, 0x400300000BA02, 0x400300000BA02, 0x400300000BA02},
     // {AppletId::MiiversePost, AppletId::None, 0x4003000008302, 0x4003000008B02, 0x400300000BA02,
     //  0x4003000008302, 0x0, 0x0, 0x0},
     {AppletId::AmiiboSettings, AppletId::None, 0x4003000009502, 0x4003000009E02, 0x400300000B902,
