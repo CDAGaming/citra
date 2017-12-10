@@ -43,6 +43,7 @@
 #include "core/hle/service/nwm/nwm.h"
 #include "core/hle/service/pm_app.h"
 #include "core/hle/service/ptm/ptm.h"
+#include "core/hle/service/pxi/pxi.h"
 #include "core/hle/service/qtm/qtm.h"
 #include "core/hle/service/service.h"
 #include "core/hle/service/sm/sm.h"
@@ -181,8 +182,16 @@ void ServiceFrameworkBase::HandleSyncRequest(SharedPtr<ServerSession> server_ses
     LOG_TRACE(Service, "%s",
               MakeFunctionString(info->name, GetServiceName().c_str(), cmd_buf).c_str());
     handler_invoker(this, info->handler_callback, context);
-    context.WriteToOutgoingCommandBuffer(cmd_buf, *Kernel::g_current_process,
-                                         Kernel::g_handle_table);
+
+    auto thread = Kernel::GetCurrentThread();
+    ASSERT(thread->status == THREADSTATUS_RUNNING || thread->status == THREADSTATUS_WAIT_HLE_EVENT);
+    // Only write the response immediately if the thread is still running. If the HLE handler put
+    // the thread to sleep then the writing of the command buffer will be deferred to the wakeup
+    // callback.
+    if (thread->status == THREADSTATUS_RUNNING) {
+        context.WriteToOutgoingCommandBuffer(cmd_buf, *Kernel::g_current_process,
+                                             Kernel::g_handle_table);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -259,21 +268,23 @@ void Init() {
 
     ERR::InstallInterfaces();
 
+    PXI::InstallInterfaces(*SM::g_service_manager);
     NS::InstallInterfaces(*SM::g_service_manager);
     AC::InstallInterfaces(*SM::g_service_manager);
+    LDR::InstallInterfaces(*SM::g_service_manager);
 
     FS::ArchiveInit();
     ACT::Init();
     AM::Init();
     APT::Init();
     BOSS::Init();
-    CAM::Init();
+    CAM::InstallInterfaces(*SM::g_service_manager);
     CECD::Init();
     CFG::Init();
     DLP::Init();
     FRD::Init();
     HID::Init();
-    IR::Init();
+    IR::InstallInterfaces(*SM::g_service_manager);
     MVD::Init();
     NDM::Init();
     NEWS::Init();
@@ -288,7 +299,6 @@ void Init() {
     AddService(new GSP::GSP_GPU);
     AddService(new GSP::GSP_LCD);
     AddService(new HTTP::HTTP_C);
-    AddService(new LDR::LDR_RO);
     AddService(new MIC::MIC_U);
     AddService(new PM::PM_APP);
     AddService(new SOC::SOC_U);
@@ -305,13 +315,11 @@ void Shutdown() {
     NIM::Shutdown();
     NEWS::Shutdown();
     NDM::Shutdown();
-    IR::Shutdown();
     HID::Shutdown();
     FRD::Shutdown();
     DLP::Shutdown();
     CFG::Shutdown();
     CECD::Shutdown();
-    CAM::Shutdown();
     BOSS::Shutdown();
     APT::Shutdown();
     AM::Shutdown();
