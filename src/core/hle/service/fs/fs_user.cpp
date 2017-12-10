@@ -926,13 +926,13 @@ static void GetFormatInfo(Service::Interface* self) {
 }
 
 /**
- * FS_User::GetNumSeeds service function.
- *  Inputs:
- *      0 : 0x087D0000 *  Outputs:
- *      0 : 0x087D0080
- *      1 : Result of function, 0 on success, otherwise error code
- *      2 : Number of seeds in the SEEDDB
- */
+* FS_User::GetNumSeeds service function.
+*  Inputs:
+*      0 : 0x087D0000 *  Outputs:
+*      0 : 0x087D0080
+*      1 : Result of function, 0 on success, otherwise error code
+*      2 : Number of seeds in the SEEDDB
+*/
 static void GetNumSeeds(Service::Interface* self) {
     IPC::RequestParser rp(Kernel::GetCommandBuffer(), 0x87D, 0, 0);
 
@@ -974,6 +974,7 @@ static void GetProgramLaunchInfo(Service::Interface* self) {
         // remains the same.
         rb.Push(ResultCode(FileSys::ErrCodes::ArchiveNotMounted, ErrorModule::FS,
                            ErrorSummary::NotFound, ErrorLevel::Status));
+        rb.Skip(4, false);
         return;
     }
 
