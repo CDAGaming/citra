@@ -17,6 +17,7 @@
 #include <QtWidgets>
 #include "citra_qt/aboutdialog.h"
 #include "citra_qt/bootmanager.h"
+#include "citra_qt/camera/still_image_camera.h"
 #include "citra_qt/configuration/config.h"
 #include "citra_qt/configuration/configure_dialog.h"
 #include "citra_qt/debugger/graphics/graphics.h"
@@ -31,8 +32,17 @@
 #include "citra_qt/game_list.h"
 #include "citra_qt/hotkeys.h"
 #include "citra_qt/main.h"
+#include "citra_qt/multiplayer/client_room.h"
+#include "citra_qt/multiplayer/direct_connect.h"
+#include "citra_qt/multiplayer/host_room.h"
+#include "citra_qt/multiplayer/lobby.h"
+#include "citra_qt/multiplayer/message.h"
 #include "citra_qt/ui_settings.h"
+#ifdef _WIN32
+#include "citra_qt/windowsextras.h"
+#endif
 #include "citra_qt/updater/updater.h"
+#include "citra_qt/util/clickable_label.h"
 #include "common/logging/backend.h"
 #include "common/logging/filter.h"
 #include "common/logging/log.h"
@@ -106,6 +116,7 @@ GMainWindow::GMainWindow() : config(new Config()), emu_thread(nullptr) {
     InitializeDebugWidgets();
     InitializeRecentFileMenuActions();
     InitializeHotkeys();
+    InitializeWindowsExtras();
     ShowUpdaterWidgets();
 
     SetDefaultUIGeometry();
@@ -113,6 +124,18 @@ GMainWindow::GMainWindow() : config(new Config()), emu_thread(nullptr) {
 
     ConnectMenuEvents();
     ConnectWidgetEvents();
+
+    Network::Init();
+
+    if (auto member = Network::GetRoomMember().lock()) {
+        // register the network structs to use in slots and signals
+        qRegisterMetaType<Network::RoomMember::State>();
+        state_callback_handle = member->BindOnStateChanged(
+            [this](const Network::RoomMember::State& state) { emit NetworkStateChanged(state); });
+        connect(this, &GMainWindow::NetworkStateChanged, this, &GMainWindow::OnNetworkStateChanged);
+    }
+
+    qRegisterMetaType<Common::WebResult>();
 
     setWindowTitle(QString("Citra %1| %2-%3")
                        .arg(Common::g_build_name, Common::g_scm_branch, Common::g_scm_desc));
@@ -141,6 +164,13 @@ GMainWindow::~GMainWindow() {
         delete render_window;
 
     Pica::g_debug_context.reset();
+
+    if (state_callback_handle) {
+        if (auto member = Network::GetRoomMember().lock()) {
+            member->Unbind(state_callback_handle);
+        }
+    }
+    Network::Shutdown();
 }
 
 void GMainWindow::InitializeWidgets() {
@@ -178,12 +208,21 @@ void GMainWindow::InitializeWidgets() {
         tr("Time taken to emulate a 3DS frame, not counting framelimiting or v-sync. For "
            "full-speed emulation this should be at most 16.67 ms."));
 
+    announce_multiplayer_session = std::make_shared<Core::AnnounceMultiplayerSession>();
+    announce_multiplayer_session->BindErrorCallback(
+        [this](const Common::WebResult& result) { emit AnnounceFailed(result); });
+    connect(this, &GMainWindow::AnnounceFailed, this, &GMainWindow::OnAnnounceFailed);
+    network_status = new ClickableLabel();
+    network_status->setToolTip(tr("Current connection status."));
+
     for (auto& label : {emu_speed_label, game_fps_label, emu_frametime_label}) {
         label->setVisible(false);
         label->setFrameStyle(QFrame::NoFrame);
         label->setContentsMargins(4, 0, 4, 0);
         statusBar()->addPermanentWidget(label, 0);
     }
+    statusBar()->addPermanentWidget(network_status, 0);
+    network_status->setPixmap(QPixmap(":/icons/disconnected.png"));
     statusBar()->setVisible(true);
     setStyleSheet("QStatusBar::item{border: none;}");
 }
@@ -287,6 +326,15 @@ void GMainWindow::InitializeHotkeys() {
     });
 }
 
+void GMainWindow::InitializeWindowsExtras() {
+#ifdef _WIN32
+    windows_extras = new WindowsExtras(this);
+    connect(windows_extras, &WindowsExtras::ClickPlayPause, this, &GMainWindow::OnResumeGame);
+    connect(windows_extras, &WindowsExtras::ClickStop, this, &GMainWindow::OnStopGame);
+    connect(windows_extras, &WindowsExtras::ClickRestart, this, &GMainWindow::OnRestartGame);
+#endif
+}
+
 void GMainWindow::ShowUpdaterWidgets() {
     ui.action_Check_For_Updates->setVisible(UISettings::values.updater_found);
     ui.action_Open_Maintenance_Tool->setVisible(UISettings::values.updater_found);
@@ -344,6 +392,7 @@ void GMainWindow::ConnectWidgetEvents() {
     connect(&status_bar_update_timer, &QTimer::timeout, this, &GMainWindow::UpdateStatusBar);
 
     connect(this, &GMainWindow::UpdateProgress, this, &GMainWindow::OnUpdateProgress);
+    connect(network_status, &ClickableLabel::clicked, this, &GMainWindow::OnOpenNetworkRoom);
 }
 
 void GMainWindow::ConnectMenuEvents() {
@@ -368,6 +417,15 @@ void GMainWindow::ConnectMenuEvents() {
     ui.action_Show_Filter_Bar->setShortcut(tr("CTRL+F"));
     connect(ui.action_Show_Filter_Bar, &QAction::triggered, this, &GMainWindow::OnToggleFilterBar);
     connect(ui.action_Show_Status_Bar, &QAction::triggered, statusBar(), &QStatusBar::setVisible);
+
+    // Multiplayer
+    connect(ui.action_View_Lobby, &QAction::triggered, this, &GMainWindow::OnViewLobby);
+    connect(ui.action_Start_Room, &QAction::triggered, this, &GMainWindow::OnCreateRoom);
+    connect(ui.action_Stop_Room, &QAction::triggered, this, &GMainWindow::OnCloseRoom);
+    connect(ui.action_Connect_To_Room, &QAction::triggered, this,
+            &GMainWindow::OnDirectConnectToRoom);
+    connect(ui.action_Chat, &QAction::triggered, this, &GMainWindow::OnOpenNetworkRoom);
+
     ui.action_Fullscreen->setShortcut(GetHotkey("Main Window", "Fullscreen", this)->key());
     connect(ui.action_Fullscreen, &QAction::triggered, this, &GMainWindow::ToggleFullscreen);
 
@@ -582,6 +640,7 @@ void GMainWindow::BootGame(const QString& filename) {
     render_window->show();
     render_window->setFocus();
 
+    current_game_path = filename;
     emulation_running = true;
     if (ui.action_Fullscreen->isChecked()) {
         ShowFullscreen();
@@ -783,6 +842,27 @@ void GMainWindow::OnMenuRecentFile() {
     }
 }
 
+void GMainWindow::OnNetworkStateChanged(const Network::RoomMember::State& state) {
+    if (state == Network::RoomMember::State::Joined) {
+        network_status->setPixmap(QPixmap(":/icons/connected.png"));
+        ui.action_Chat->setEnabled(true);
+        return;
+    }
+    network_status->setPixmap(QPixmap(":/icons/disconnected.png"));
+    ui.action_Chat->setDisabled(true);
+
+    ChangeRoomState();
+}
+
+void GMainWindow::OnAnnounceFailed(const Common::WebResult& result) {
+    announce_multiplayer_session->Stop();
+    QMessageBox::warning(
+        this, tr("Error"),
+        tr("Announcing the room failed. \nThe room will not get listed publicy. \nError: ") +
+            QString::fromStdString(result.result_string),
+        QMessageBox::Ok);
+}
+
 void GMainWindow::OnStartGame() {
     emu_thread->SetRunning(true);
     qRegisterMetaType<Core::System::ResultStatus>("Core::System::ResultStatus");
@@ -795,6 +875,8 @@ void GMainWindow::OnStartGame() {
 
     ui.action_Pause->setEnabled(true);
     ui.action_Stop->setEnabled(true);
+
+    UpdateWindowsExtras();
 }
 
 void GMainWindow::OnPauseGame() {
@@ -803,10 +885,25 @@ void GMainWindow::OnPauseGame() {
     ui.action_Start->setEnabled(true);
     ui.action_Pause->setEnabled(false);
     ui.action_Stop->setEnabled(true);
+
+    UpdateWindowsExtras();
 }
 
 void GMainWindow::OnStopGame() {
     ShutdownGame();
+    UpdateWindowsExtras();
+}
+
+void GMainWindow::OnRestartGame() {
+    BootGame(current_game_path);
+}
+
+void GMainWindow::OnResumeGame() {
+    if (emu_thread->IsRunning()) {
+        OnPauseGame();
+    } else {
+        OnStartGame();
+    }
 }
 
 void GMainWindow::ToggleFullscreen() {
@@ -900,6 +997,59 @@ void GMainWindow::OnCreateGraphicsSurfaceViewer() {
     graphicsSurfaceViewerWidget->show();
 }
 
+static void BringWidgetToFront(QWidget* widget) {
+    widget->show();
+    widget->activateWindow();
+    widget->raise();
+}
+
+void GMainWindow::OnViewLobby() {
+    if (lobby == nullptr) {
+        lobby = new Lobby(this, game_list->GetModel(), announce_multiplayer_session);
+        connect(lobby, &QWidget::close, this, [&] { lobby = nullptr; });
+    }
+    BringWidgetToFront(lobby);
+}
+
+void GMainWindow::OnCreateRoom() {
+    if (host_room == nullptr) {
+        host_room = new HostRoomWindow(this, game_list->GetModel(), announce_multiplayer_session);
+        connect(host_room, &QWidget::close, this, [&] { host_room = nullptr; });
+    }
+    BringWidgetToFront(host_room);
+}
+
+void GMainWindow::OnCloseRoom() {
+    if (auto room = Network::GetRoom().lock()) {
+        if (room->GetState() == Network::Room::State::Open) {
+            if (NetworkMessage::WarnCloseRoom()) {
+                room->Destroy();
+                announce_multiplayer_session->Stop();
+            }
+        }
+    }
+}
+
+void GMainWindow::OnOpenNetworkRoom() {
+    if (auto member = Network::GetRoomMember().lock()) {
+        if (member->IsConnected()) {
+            if (client_room == nullptr) {
+                client_room = new ClientRoomWindow(this);
+                connect(client_room, &QWidget::close, this, [&] { client_room = nullptr; });
+            }
+            BringWidgetToFront(client_room);
+        }
+    }
+}
+
+void GMainWindow::OnDirectConnectToRoom() {
+    if (direct_connect == nullptr) {
+        direct_connect = new DirectConnectWindow(this);
+        connect(direct_connect, &QWidget::close, this, [&] { direct_connect = nullptr; });
+    }
+    BringWidgetToFront(direct_connect);
+}
+
 void GMainWindow::UpdateStatusBar() {
     if (emu_thread == nullptr) {
         status_bar_update_timer.stop();
@@ -915,6 +1065,20 @@ void GMainWindow::UpdateStatusBar() {
     emu_speed_label->setVisible(true);
     game_fps_label->setVisible(true);
     emu_frametime_label->setVisible(true);
+}
+
+void GMainWindow::UpdateWindowsExtras() {
+#ifdef _WIN32
+    if (emulation_running) {
+        if (ui.action_Pause->isEnabled()) {
+            windows_extras->UpdatePlay();
+        } else {
+            windows_extras->UpdatePause();
+        }
+    } else {
+        windows_extras->UpdateStop();
+    }
+#endif
 }
 
 void GMainWindow::OnCoreError(Core::System::ResultStatus result, std::string details) {
@@ -1024,6 +1188,16 @@ void GMainWindow::closeEvent(QCloseEvent* event) {
 
     render_window->close();
 
+    // Close Multiplayer windows
+    if (host_room)
+        host_room->close();
+    if (direct_connect)
+        direct_connect->close();
+    if (client_room)
+        client_room->close();
+    if (lobby)
+        lobby->close();
+
     QWidget::closeEvent(event);
 }
 
@@ -1084,6 +1258,24 @@ void GMainWindow::UpdateUITheme() {
     }
 }
 
+void GMainWindow::ChangeRoomState() {
+    if (auto room = Network::GetRoom().lock()) {
+        if (room->GetState() == Network::Room::State::Open) {
+            ui.action_Start_Room->setDisabled(true);
+            ui.action_Stop_Room->setEnabled(true);
+            return;
+        }
+        ui.action_Start_Room->setEnabled(true);
+        ui.action_Stop_Room->setDisabled(true);
+    }
+}
+
+void GMainWindow::ShowWindowsExtras() {
+#ifdef _WIN32
+    windows_extras->Show();
+#endif
+}
+
 #ifdef main
 #undef main
 #endif
@@ -1110,6 +1302,9 @@ int main(int argc, char* argv[]) {
     // After settings have been loaded by GMainWindow, apply the filter
     log_filter.ParseFilterString(Settings::values.log_filter);
 
+    Camera::RegisterFactory("image", std::make_unique<Camera::StillImageCameraFactory>());
+
     main_window.show();
+    main_window.ShowWindowsExtras();
     return app.exec();
 }

@@ -4,6 +4,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/CMakeModules)
 
 set(SRCS
+            camera/still_image_camera.cpp
             configuration/config.cpp
             configuration/configure_audio.cpp
             configuration/configure_debug.cpp
@@ -23,8 +24,15 @@ set(SRCS
             debugger/profiler.cpp
             debugger/registers.cpp
             debugger/wait_tree.cpp
+            multiplayer/chat_room.cpp
+            multiplayer/client_room.cpp
+            multiplayer/direct_connect.cpp
+            multiplayer/host_room.cpp
+            multiplayer/lobby.cpp
+            multiplayer/message.cpp
             updater/updater.cpp
             util/spinbox.cpp
+            util/clickable_label.cpp
             util/util.cpp
             aboutdialog.cpp
             bootmanager.cpp
@@ -37,6 +45,7 @@ set(SRCS
             )
 
 set(HEADERS
+            camera/still_image_camera.h
             configuration/config.h
             configuration/configure_audio.h
             configuration/configure_debug.h
@@ -57,8 +66,17 @@ set(HEADERS
             debugger/profiler.h
             debugger/registers.h
             debugger/wait_tree.h
+            multiplayer/chat_room.h
+            multiplayer/client_room.h
+            multiplayer/direct_connect.h
+            multiplayer/host_room.h
+            multiplayer/lobby.h
+            multiplayer/lobby_p.h
+            multiplayer/message.h
+            multiplayer/validation.h
             updater/updater.h
             updater/updater_p.h
+            util/clickable_label.h
             util/spinbox.h
             util/util.h
             aboutdialog.h
@@ -83,7 +101,16 @@ set(UIS
             aboutdialog.ui
             hotkeys.ui
             main.ui
+            multiplayer/direct_connect.ui
+            multiplayer/lobby.ui
+            multiplayer/chat_room.ui
+            multiplayer/client_room.ui
+            multiplayer/host_room.ui
             )
+if(WIN32)
+  list(APPEND SRCS windowsextras.cpp)
+  list(APPEND HEADERS windowsextras.h)
+endif()
 
 file(GLOB_RECURSE ICONS ${CMAKE_SOURCE_DIR}/dist/icons/*)
 file(GLOB_RECURSE THEMES ${CMAKE_SOURCE_DIR}/dist/qt_themes/*)
@@ -107,6 +134,9 @@ endif()
 target_link_libraries(citra-qt PRIVATE audio_core common core input_common network video_core)
 target_link_libraries(citra-qt PRIVATE Boost::boost glad nihstro-headers Qt5::OpenGL Qt5::Widgets)
 target_link_libraries(citra-qt PRIVATE ${PLATFORM_LIBRARIES} Threads::Threads)
+if(WIN32)
+  target_link_libraries(citra-qt PRIVATE Qt5::WinExtras)
+endif()
 
 if(UNIX AND NOT APPLE)
     install(TARGETS citra-qt RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
