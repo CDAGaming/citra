@@ -21,7 +21,8 @@ enum SystemModel {
     NINTENDO_3DS_XL = 1,
     NEW_NINTENDO_3DS = 2,
     NINTENDO_2DS = 3,
-    NEW_NINTENDO_3DS_XL = 4
+    NEW_NINTENDO_3DS_XL = 4,
+	NEW_NINTENDO_2DS_XL = 5
 };
 
 enum SystemLanguage {
@@ -136,6 +137,20 @@ void GenHashConsoleUnique(Service::Interface* self);
  *      2 : 1 if the system is a Canada or USA model, 0 otherwise
  */
 void GetRegionCanadaUSA(Service::Interface* self);
+
+/**
+ * CFG::SetSystemModel service function
+ * Input:
+ *      Model of the console
+ */
+void SetSystemModel(u32 model);
+
+/**
+ * CFG::GetSystemModelID service function
+ * Output:
+ *      Model of the console
+ */
+u32 GetSystemModelID();
 
 /**
  * CFG::GetSystemModel service function

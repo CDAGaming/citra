@@ -22,11 +22,85 @@
         <string>System Settings</string>
        </property>
        <layout class="QGridLayout" name="gridLayout">
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_birthday">
+          <property name="text">
+           <string>Birthday</string>
+          </property>
+         </widget>
+        </item>
         <item row="0" column="0">
          <widget class="QLabel" name="label_username">
           <property name="text">
            <string>Username</string>
           </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QComboBox" name="combo_language">
+          <property name="toolTip">
+           <string>Note: this can be overridden when region setting is auto-select</string>
+          </property>
+          <item>
+           <property name="text">
+            <string>Japanese (日本語)</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>English</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>French (français)</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>German (Deutsch)</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Italian (italiano)</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Spanish (español)</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Simplified Chinese (简体中文)</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Korean (한국어)</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Dutch (Nederlands)</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Portuguese (português)</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Russian (Русский)</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Traditional Chinese (正體中文)</string>
+           </property>
+          </item>
          </widget>
         </item>
         <item row="0" column="1">
@@ -39,13 +113,6 @@
           </property>
           <property name="maxLength">
            <number>10</number>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_birthday">
-          <property name="text">
-           <string>Birthday</string>
           </property>
          </widget>
         </item>
@@ -127,78 +194,61 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="1">
-         <widget class="QComboBox" name="combo_language">
-          <property name="toolTip">
-           <string>Note: this can be overridden when region setting is auto-select</string>
-          </property>
-          <item>
-           <property name="text">
-            <string>Japanese (日本語)</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>English</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>French (français)</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>German (Deutsch)</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Italian (italiano)</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Spanish (español)</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Simplified Chinese (简体中文)</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Korean (한국어)</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Dutch (Nederlands)</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Portuguese (português)</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Russian (Русский)</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Traditional Chinese (正體中文)</string>
-           </property>
-          </item>
-         </widget>
-        </item>
         <item row="3" column="0">
          <widget class="QLabel" name="label_sound">
           <property name="text">
            <string>Sound output mode</string>
           </property>
+         </widget>
+        </item>
+        <item row="5" column="1">
+         <widget class="QPushButton" name="button_regenerate_console_id">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="layoutDirection">
+           <enum>Qt::RightToLeft</enum>
+          </property>
+          <property name="text">
+           <string>Regenerate</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QComboBox" name="combo_model">
+          <item>
+           <property name="text">
+            <string>Nintendo 3DS</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Nintendo 3DS XL</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>New Nintendo 3DS</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Nintendo 2DS</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>New Nintendo 3DS XL</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>New Nintendo 2DS XL</string>
+           </property>
+          </item>
          </widget>
         </item>
         <item row="3" column="1">
@@ -220,26 +270,17 @@
           </item>
          </widget>
         </item>
-        <item row="4" column="0">
+        <item row="5" column="0">
          <widget class="QLabel" name="label_console_id">
           <property name="text">
            <string>Console ID:</string>
           </property>
          </widget>
         </item>
-        <item row="4" column="1">
-         <widget class="QPushButton" name="button_regenerate_console_id">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="layoutDirection">
-           <enum>Qt::RightToLeft</enum>
-          </property>
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_model">
           <property name="text">
-           <string>Regenerate</string>
+           <string>Model</string>
           </property>
          </widget>
         </item>
