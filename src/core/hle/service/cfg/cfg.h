@@ -142,13 +142,13 @@ void GetRegionCanadaUSA(Service::Interface* self);
  * Sets the model in config savegame.
  * @param model the model to set.
  */
-void SetSystemModel(SystemModel model);
+void SetSystemModel(u32 model);
 
 /**
  * Gets the model from config savegame.
  * @returns the model
  */
-SystemModel GetSystemModelB();
+u32 GetSystemModelID();
 
 /**
  * CFG::GetSystemModel service function
