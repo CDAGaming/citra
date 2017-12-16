@@ -139,18 +139,16 @@ void GenHashConsoleUnique(Service::Interface* self);
 void GetRegionCanadaUSA(Service::Interface* self);
 
 /**
- * CFG::SetSystemModel service function
- * Input:
- *      Model of the console
+ * Sets the model in config savegame.
+ * @param model the model to set.
  */
-void SetSystemModel(u32 model);
+void SetSystemModel(SystemModel model);
 
 /**
- * CFG::GetSystemModelID service function
- * Output:
- *      Model of the console
+ * Gets the model from config savegame.
+ * @returns the model
  */
-u32 GetSystemModelID();
+SystemModel GetSystemModelID();
 
 /**
  * CFG::GetSystemModel service function
