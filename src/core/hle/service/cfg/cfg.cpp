@@ -222,15 +222,13 @@ void GetRegionCanadaUSA(Service::Interface* self) {
 }
 
 void SetSystemModel(u32 model) {
-  SetConfigInfoBlock(ConsoleModelBlockID, 4, 0x8,
-                                          reinterpret_cast<u8 *>(&model));
+    SetConfigInfoBlock(ConsoleModelBlockID, 4, 0x8, reinterpret_cast<u8*>(&model));
 }
 
 u32 GetSystemModelID() {
-  u32 model;
-  GetConfigInfoBlock(ConsoleModelBlockID, 4, 0x8,
-                                          reinterpret_cast<u8 *>(&model));
-  return model;
+   u32 model;
+   GetConfigInfoBlock(ConsoleModelBlockID, 4, 0x8, reinterpret_cast<u8*>(&model));
+   return model;
 }
 
 void GetSystemModel(Service::Interface* self) {
