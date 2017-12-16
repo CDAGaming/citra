@@ -148,7 +148,7 @@ void SetSystemModel(SystemModel model);
  * Gets the model from config savegame.
  * @returns the model
  */
-SystemModel GetSystemModelID();
+SystemModel GetSystemModelB();
 
 /**
  * CFG::GetSystemModel service function
