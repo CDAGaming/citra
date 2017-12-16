@@ -220,7 +220,7 @@
         <item row="4" column="1">
          <widget class="QComboBox" name="combo_model">
           <property name="toolTip">
-           <string>Changing this does not improve the speed.</string>
+           <string>Changing this does not improve speed, compatibility or add features.</string>
           </property>
           <item>
            <property name="text">
