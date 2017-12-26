@@ -396,6 +396,11 @@ inline u32 RequestParser::Pop() {
     return cmdbuf[index++];
 }
 
+template <>
+inline s32 RequestParser::Pop() {
+    return static_cast<s32>(cmdbuf[index++]);
+}
+
 template <typename T>
 void RequestParser::PopRaw(T& value) {
     static_assert(std::is_trivially_copyable<T>(), "Raw types should be trivially copyable");
