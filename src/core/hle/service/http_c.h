@@ -42,7 +42,7 @@ private:
         RequestMethod method{RequestMethod::Get};
         bool initialized = false;
         bool proxy_default = false;
-        bool keep_alive;
+        bool keep_alive = false;
         u32 ssl_options = 0;
         u32 current_offset = 0;
         u64 timeout = 0;
@@ -55,7 +55,7 @@ private:
         }
     };
 
-    bool ContextExists(s32 context_id, IPC::RequestParser& rp) const;
+    bool ContextExists(u32 context_id, IPC::RequestParser& rp) const;
 
     /**
      * HTTP_C::Initialize service function
@@ -228,8 +228,8 @@ private:
     void SetKeepAlive(Kernel::HLERequestContext& ctx);
 
     Kernel::SharedPtr<Kernel::SharedMemory> shared_memory = nullptr;
-    std::unordered_map<s32, Context> contexts{};
-    s32 context_counter{0};
+    std::unordered_map<u32, Context> contexts{};
+    u32 context_counter{0};
 };
 
 void InstallInterfaces(SM::ServiceManager& service_manager);
