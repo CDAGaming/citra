@@ -2,6 +2,9 @@
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
+#include <map>
+#include <string>
+#include <cpr/cpr.h>
 #include "core/hle/ipc_helpers.h"
 #include "core/hle/kernel/shared_memory.h"
 #include "core/hle/service/http_c.h"
@@ -9,10 +12,76 @@
 namespace Service {
 namespace HTTP {
 
-static const ResultCode ERROR_CONTEXT_ERROR(0xD8A0A066);
-static const ResultCode RESULT_DOWNLOADPENDING(0xd840a02b);
+static const ResultCode ERROR_CONTEXT_ERROR = // 0xD8A0A066
+    ResultCode(static_cast<ErrorDescription>(102), ErrorModule::HTTP, ErrorSummary::InvalidState,
+               ErrorLevel::Permanent);
+static const ResultCode RESULT_DOWNLOADPENDING = // 0xD840A02B
+    ResultCode(static_cast<ErrorDescription>(43), ErrorModule::HTTP, ErrorSummary::WouldBlock,
+               ErrorLevel::Permanent);
 
-bool HTTP_C::ContextExists(u32 context_id, IPC::RequestParser& rp) const {
+enum class RequestMethod : u8 {
+    Get = 0x1,
+    Post = 0x2,
+    Head = 0x3,
+    Put = 0x4,
+    Delete = 0x5,
+};
+
+struct Context {
+    cpr::Url url;
+    cpr::Header request_headers;
+    RequestMethod method{RequestMethod::Get};
+    bool initialized = false;
+    bool proxy_default = false;
+    bool keep_alive = false;
+    u32 ssl_options = 0;
+    u32 current_offset = 0;
+    u64 timeout = 0;
+    cpr::Response response;
+    u32 GetResponseStatusCode() const {
+        return response.status_code;
+    }
+    u32 GetResponseContentLength() const {
+        return std::stoi(response.header.at("Content-Length"));
+    }
+    cpr::VerifySsl ssl_opt() const {
+        static const u32 disable_verify = 0x200;
+        const bool no_verify = (ssl_options & disable_verify) == disable_verify;
+        return cpr::VerifySsl{!no_verify};
+    }
+};
+
+class HTTP_C::Impl {
+public:
+    ~Impl();
+    void Initialize(Kernel::HLERequestContext& ctx);
+    void CreateContext(Kernel::HLERequestContext& ctx);
+    void CloseContext(Kernel::HLERequestContext& ctx);
+    void GetDownloadSizeState(Kernel::HLERequestContext& ctx);
+    void InitializeConnectionSession(Kernel::HLERequestContext& ctx);
+    void BeginRequest(Kernel::HLERequestContext& ctx);
+    void ReceiveData(Kernel::HLERequestContext& ctx);
+    void ReceiveDataTimeout(Kernel::HLERequestContext& ctx);
+    void SetProxyDefault(Kernel::HLERequestContext& ctx);
+    void AddRequestHeader(Kernel::HLERequestContext& ctx);
+    void GetResponseHeader(Kernel::HLERequestContext& ctx);
+    void GetResponseStatusCode(Kernel::HLERequestContext& ctx);
+    void GetResponseStatusCodeTimeout(Kernel::HLERequestContext& ctx);
+    void SetSSLOpt(Kernel::HLERequestContext& ctx);
+    void SetKeepAlive(Kernel::HLERequestContext& ctx);
+
+private:
+    bool ContextExists(u32 context_id, IPC::RequestParser& rp) const;
+    Kernel::SharedPtr<Kernel::SharedMemory> shared_memory = nullptr;
+    std::unordered_map<u32, Context> contexts;
+    u32 context_counter{0};
+};
+
+HTTP_C::Impl::~Impl() {
+    shared_memory = nullptr;
+}
+
+bool HTTP_C::Impl::ContextExists(u32 context_id, IPC::RequestParser& rp) const {
     const auto context = contexts.find(context_id);
     if (context == contexts.end()) {
         IPC::RequestBuilder rb = rp.MakeBuilder(1, 0);
@@ -23,7 +92,7 @@ bool HTTP_C::ContextExists(u32 context_id, IPC::RequestParser& rp) const {
     return true;
 }
 
-void HTTP_C::Initialize(Kernel::HLERequestContext& ctx) {
+void HTTP_C::Impl::Initialize(Kernel::HLERequestContext& ctx) {
     IPC::RequestParser rp(ctx, 0x1, 1, 4);
     const u32 shmem_size = rp.Pop<u32>();
     const u32 process_header = rp.Pop<u32>();
@@ -39,7 +108,7 @@ void HTTP_C::Initialize(Kernel::HLERequestContext& ctx) {
     LOG_WARNING(Service_HTTP, "called, shmem_size=%u", shmem_size);
 }
 
-void HTTP_C::CreateContext(Kernel::HLERequestContext& ctx) {
+void HTTP_C::Impl::CreateContext(Kernel::HLERequestContext& ctx) {
     IPC::RequestParser rp(ctx, 0x2, 2, 2);
     const u32 url_size = rp.Pop<u32>();
 
@@ -58,7 +127,7 @@ void HTTP_C::CreateContext(Kernel::HLERequestContext& ctx) {
     LOG_WARNING(Service_HTTP, "called, url_size=%u, url=%s", url_size, context.url.c_str());
 }
 
-void HTTP_C::CloseContext(Kernel::HLERequestContext& ctx) {
+void HTTP_C::Impl::CloseContext(Kernel::HLERequestContext& ctx) {
     IPC::RequestParser rp(ctx, 0x3, 1, 0);
     const u32 context_id = rp.Pop<u32>();
 
@@ -73,7 +142,7 @@ void HTTP_C::CloseContext(Kernel::HLERequestContext& ctx) {
     LOG_WARNING(Service_HTTP, "called, context_id=%u", context_id);
 }
 
-void HTTP_C::GetDownloadSizeState(Kernel::HLERequestContext& ctx) {
+void HTTP_C::Impl::GetDownloadSizeState(Kernel::HLERequestContext& ctx) {
     IPC::RequestParser rp(ctx, 0x6, 1, 0);
     const u32 context_id = rp.Pop<u32>();
 
@@ -89,7 +158,7 @@ void HTTP_C::GetDownloadSizeState(Kernel::HLERequestContext& ctx) {
     LOG_WARNING(Service_HTTP, "called, context_id=%u", context_id);
 }
 
-void HTTP_C::InitializeConnectionSession(Kernel::HLERequestContext& ctx) {
+void HTTP_C::Impl::InitializeConnectionSession(Kernel::HLERequestContext& ctx) {
     IPC::RequestParser rp(ctx, 0x8, 1, 2);
     const u32 context_id = rp.Pop<u32>();
     rp.Pop<u32>(); // process_id = 0x20
@@ -106,7 +175,7 @@ void HTTP_C::InitializeConnectionSession(Kernel::HLERequestContext& ctx) {
     LOG_WARNING(Service_HTTP, "called, context_id=%u", context_id);
 }
 
-void HTTP_C::BeginRequest(Kernel::HLERequestContext& ctx) {
+void HTTP_C::Impl::BeginRequest(Kernel::HLERequestContext& ctx) {
     IPC::RequestParser rp(ctx, 0x9, 1, 0);
     const u32 context_id = rp.Pop<u32>();
 
@@ -117,8 +186,9 @@ void HTTP_C::BeginRequest(Kernel::HLERequestContext& ctx) {
 
     switch (context.method) {
     case RequestMethod::Get: {
-        context.response = cpr::Get(context.url, context.request_headers);
-    } break;
+        context.response = cpr::Get(context.url, context.request_headers, context.ssl_opt());
+        break;
+    }
     }
 
     IPC::RequestBuilder rb = rp.MakeBuilder(1, 0);
@@ -127,7 +197,7 @@ void HTTP_C::BeginRequest(Kernel::HLERequestContext& ctx) {
     LOG_WARNING(Service_HTTP, "called, context_id=%u", context_id);
 }
 
-void HTTP_C::ReceiveData(Kernel::HLERequestContext& ctx) {
+void HTTP_C::Impl::ReceiveData(Kernel::HLERequestContext& ctx) {
     IPC::RequestParser rp(ctx, 0xB, 2, 2);
     const u32 context_id = rp.Pop<u32>();
     u32 buffer_size = rp.Pop<u32>();
@@ -142,13 +212,13 @@ void HTTP_C::ReceiveData(Kernel::HLERequestContext& ctx) {
     context.current_offset += size;
 
     IPC::RequestBuilder rb = rp.MakeBuilder(1, 0);
-    rb.Push((context.current_offset < context.GetResponseContentLength()) ? RESULT_DOWNLOADPENDING
-                                                                          : RESULT_SUCCESS);
+    rb.Push(context.current_offset < context.GetResponseContentLength() ? RESULT_DOWNLOADPENDING
+                                                                        : RESULT_SUCCESS);
 
     LOG_WARNING(Service_HTTP, "called, context_id=%u", context_id);
 }
 
-void HTTP_C::ReceiveDataTimeout(Kernel::HLERequestContext& ctx) {
+void HTTP_C::Impl::ReceiveDataTimeout(Kernel::HLERequestContext& ctx) {
     IPC::RequestParser rp(ctx, 0xC, 4, 2);
     const u32 context_id = rp.Pop<u32>();
     const u32 buffer_size = rp.Pop<u32>();
@@ -165,13 +235,13 @@ void HTTP_C::ReceiveDataTimeout(Kernel::HLERequestContext& ctx) {
     context.current_offset += size;
 
     IPC::RequestBuilder rb = rp.MakeBuilder(1, 0);
-    rb.Push((context.current_offset < context.GetResponseContentLength()) ? RESULT_DOWNLOADPENDING
-                                                                          : RESULT_SUCCESS);
+    rb.Push(context.current_offset < context.GetResponseContentLength() ? RESULT_DOWNLOADPENDING
+                                                                        : RESULT_SUCCESS);
 
     LOG_WARNING(Service_HTTP, "called, context_id=%u", context_id);
 }
 
-void HTTP_C::SetProxyDefault(Kernel::HLERequestContext& ctx) {
+void HTTP_C::Impl::SetProxyDefault(Kernel::HLERequestContext& ctx) {
     IPC::RequestParser rp(ctx, 0xE, 1, 0);
     const u32 context_id = rp.Pop<u32>();
 
@@ -186,16 +256,16 @@ void HTTP_C::SetProxyDefault(Kernel::HLERequestContext& ctx) {
     LOG_WARNING(Service_HTTP, "called, context_id=%u", context_id);
 }
 
-void HTTP_C::AddRequestHeader(Kernel::HLERequestContext& ctx) {
+void HTTP_C::Impl::AddRequestHeader(Kernel::HLERequestContext& ctx) {
     IPC::RequestParser rp(ctx, 0x11, 3, 4);
     const u32 context_id = rp.Pop<u32>();
     const u32 name_size = rp.Pop<u32>();
     const u32 value_size = rp.Pop<u32>();
     const std::vector<u8> name_buffer = rp.PopStaticBuffer();
     Kernel::MappedBuffer& value_buffer = rp.PopMappedBuffer();
-    std::string name(name_buffer.begin(), name_buffer.end());
-    std::string value(value_size, '\0');
-    value_buffer.Read(&value[0], 0, value_size);
+    const std::string name(reinterpret_cast<const char*>(name_buffer.data()), name_size - 1);
+    std::string value(value_size - 1, '\0');
+    value_buffer.Read(&value[0], 0, value_size - 1);
 
     if (!ContextExists(context_id, rp))
         return;
@@ -204,24 +274,50 @@ void HTTP_C::AddRequestHeader(Kernel::HLERequestContext& ctx) {
     IPC::RequestBuilder rb = rp.MakeBuilder(1, 0);
     rb.Push(RESULT_SUCCESS);
 
-    LOG_WARNING(Service_HTTP, "called, context_id=%u", context_id);
+    LOG_WARNING(Service_HTTP, "called, name=%s, value=%s, context_id=%u", name.c_str(),
+                value.c_str(), context_id);
 }
 
-void HTTP_C::GetResponseStatusCode(Kernel::HLERequestContext& ctx) {
+void HTTP_C::Impl::GetResponseHeader(Kernel::HLERequestContext& ctx) {
+    IPC::RequestParser rp(ctx, 0x1E, 3, 4);
+    const u32 context_id = rp.Pop<u32>();
+    const u32 name_size = rp.Pop<u32>();
+    const u32 value_size = rp.Pop<u32>();
+    const std::vector<u8> name_buffer = rp.PopStaticBuffer();
+    Kernel::MappedBuffer& value_buffer = rp.PopMappedBuffer();
+    const std::string name(reinterpret_cast<const char*>(name_buffer.data()), name_size - 1);
+
+    if (!ContextExists(context_id, rp))
+        return;
+    const std::string value = contexts[context_id].response.header[name] + '\0';
+
+    value_buffer.Write(value.c_str(), 0, value.size());
+
+    IPC::RequestBuilder rb = rp.MakeBuilder(2, 0);
+    rb.Push(RESULT_SUCCESS);
+    rb.Push<u32>(value.size());
+
+    LOG_WARNING(Service_HTTP, "called, name=%s, value=%s, context_id=%u", name.c_str(),
+                value.c_str(), context_id);
+}
+
+void HTTP_C::Impl::GetResponseStatusCode(Kernel::HLERequestContext& ctx) {
     IPC::RequestParser rp(ctx, 0x22, 1, 0);
     const u32 context_id = rp.Pop<u32>();
 
     if (!ContextExists(context_id, rp))
         return;
 
+    const u32 status_code = contexts[context_id].GetResponseStatusCode();
+
     IPC::RequestBuilder rb = rp.MakeBuilder(2, 0);
     rb.Push(RESULT_SUCCESS);
-    rb.Push<u32>(contexts[context_id].GetResponseStatusCode());
+    rb.Push<u32>(status_code);
 
-    LOG_WARNING(Service_HTTP, "called, context_id=%u", context_id);
+    LOG_WARNING(Service_HTTP, "called, context_id=%u, status_code=%u", context_id, status_code);
 }
 
-void HTTP_C::GetResponseStatusCodeTimeout(Kernel::HLERequestContext& ctx) {
+void HTTP_C::Impl::GetResponseStatusCodeTimeout(Kernel::HLERequestContext& ctx) {
     IPC::RequestParser rp(ctx, 0x23, 3, 0);
     const u32 context_id = rp.Pop<u32>();
     const u64 timeout = rp.Pop<u64>();
@@ -236,7 +332,7 @@ void HTTP_C::GetResponseStatusCodeTimeout(Kernel::HLERequestContext& ctx) {
     LOG_WARNING(Service_HTTP, "called, context_id=%u", context_id);
 }
 
-void HTTP_C::SetSSLOpt(Kernel::HLERequestContext& ctx) {
+void HTTP_C::Impl::SetSSLOpt(Kernel::HLERequestContext& ctx) {
     IPC::RequestParser rp(ctx, 0x2B, 2, 0);
     const u32 context_id = rp.Pop<u32>();
     const u32 ssl_options = rp.Pop<u32>();
@@ -251,7 +347,7 @@ void HTTP_C::SetSSLOpt(Kernel::HLERequestContext& ctx) {
     LOG_WARNING(Service_HTTP, "called, context_id=%u, ssl_options=0x%X", context_id, ssl_options);
 }
 
-void HTTP_C::SetKeepAlive(Kernel::HLERequestContext& ctx) {
+void HTTP_C::Impl::SetKeepAlive(Kernel::HLERequestContext& ctx) {
     IPC::RequestParser rp(ctx, 0x2B, 2, 0);
     const u32 context_id = rp.Pop<u32>();
     const bool keep_alive = rp.Pop<bool>();
@@ -266,7 +362,7 @@ void HTTP_C::SetKeepAlive(Kernel::HLERequestContext& ctx) {
     LOG_WARNING(Service_HTTP, "called, context_id=%u, keep_alive=%u", context_id, keep_alive);
 }
 
-HTTP_C::HTTP_C() : ServiceFramework("http:C", 14) {
+HTTP_C::HTTP_C() : ServiceFramework("http:C", 32), pimpl{new Impl{}} {
     static const FunctionInfo functions[] = {
         {0x00010044, &HTTP_C::Initialize, "Initialize"},
         {0x00020082, &HTTP_C::CreateContext, "CreateContext"},
@@ -297,7 +393,7 @@ HTTP_C::HTTP_C() : ServiceFramework("http:C", 14) {
         {0x001B0102, nullptr, "SendPOSTDataRawTimeout"},
         {0x001C0080, nullptr, "SetPostDataEncoding"},
         {0x001D0040, nullptr, "NotifyFinishSendPostData"},
-        {0x001E00C4, nullptr, "GetResponseHeader"},
+        {0x001E00C4, &HTTP_C::GetResponseHeader, "GetResponseHeader"},
         {0x001F0144, nullptr, "GetResponseHeaderTimeout"},
         {0x00200082, nullptr, "GetResponseData"},
         {0x00210102, nullptr, "GetResponseDataTimeout"},
@@ -326,8 +422,64 @@ HTTP_C::HTTP_C() : ServiceFramework("http:C", 14) {
     RegisterHandlers(functions);
 }
 
-HTTP_C::~HTTP_C() {
-    shared_memory = nullptr;
+void HTTP_C::Initialize(Kernel::HLERequestContext& ctx) {
+    pimpl->Initialize(ctx);
+}
+
+void HTTP_C::CreateContext(Kernel::HLERequestContext& ctx) {
+    pimpl->CreateContext(ctx);
+}
+
+void HTTP_C::CloseContext(Kernel::HLERequestContext& ctx) {
+    pimpl->CloseContext(ctx);
+}
+
+void HTTP_C::GetDownloadSizeState(Kernel::HLERequestContext& ctx) {
+    pimpl->GetDownloadSizeState(ctx);
+}
+
+void HTTP_C::InitializeConnectionSession(Kernel::HLERequestContext& ctx) {
+    pimpl->InitializeConnectionSession(ctx);
+}
+
+void HTTP_C::BeginRequest(Kernel::HLERequestContext& ctx) {
+    pimpl->BeginRequest(ctx);
+}
+
+void HTTP_C::ReceiveData(Kernel::HLERequestContext& ctx) {
+    pimpl->ReceiveData(ctx);
+}
+
+void HTTP_C::ReceiveDataTimeout(Kernel::HLERequestContext& ctx) {
+    pimpl->ReceiveDataTimeout(ctx);
+}
+
+void HTTP_C::SetProxyDefault(Kernel::HLERequestContext& ctx) {
+    pimpl->SetProxyDefault(ctx);
+}
+
+void HTTP_C::AddRequestHeader(Kernel::HLERequestContext& ctx) {
+    pimpl->AddRequestHeader(ctx);
+}
+
+void HTTP_C::GetResponseHeader(Kernel::HLERequestContext& ctx) {
+    pimpl->GetResponseHeader(ctx);
+}
+
+void HTTP_C::GetResponseStatusCode(Kernel::HLERequestContext& ctx) {
+    pimpl->GetResponseStatusCode(ctx);
+}
+
+void HTTP_C::GetResponseStatusCodeTimeout(Kernel::HLERequestContext& ctx) {
+    pimpl->GetResponseStatusCodeTimeout(ctx);
+}
+
+void HTTP_C::SetSSLOpt(Kernel::HLERequestContext& ctx) {
+    pimpl->SetSSLOpt(ctx);
+}
+
+void HTTP_C::SetKeepAlive(Kernel::HLERequestContext& ctx) {
+    pimpl->SetKeepAlive(ctx);
 }
 
 void InstallInterfaces(SM::ServiceManager& service_manager) {

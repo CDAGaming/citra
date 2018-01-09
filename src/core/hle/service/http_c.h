@@ -4,20 +4,7 @@
 
 #pragma once
 
-#include <map>
-#include <string>
-#include <vector>
-#include <cpr/cpr.h>
 #include "core/hle/service/service.h"
-
-namespace Kernel {
-class Event;
-class SharedMemory;
-} // namespace Kernel
-
-namespace IPC {
-class RequestParser;
-}
 
 namespace Service {
 namespace HTTP {
@@ -25,38 +12,8 @@ namespace HTTP {
 class HTTP_C final : public ServiceFramework<HTTP_C> {
 public:
     HTTP_C();
-    ~HTTP_C();
 
 private:
-    /// HTTP request method.
-    enum class RequestMethod : u8 {
-        Get = 0x1,
-        Post = 0x2,
-        Head = 0x3,
-        Put = 0x4,
-        Delete = 0x5,
-    };
-    struct Context {
-        cpr::Url url;
-        cpr::Header request_headers;
-        RequestMethod method{RequestMethod::Get};
-        bool initialized = false;
-        bool proxy_default = false;
-        bool keep_alive = false;
-        u32 ssl_options = 0;
-        u32 current_offset = 0;
-        u64 timeout = 0;
-        cpr::Response response;
-        u32 GetResponseStatusCode() const {
-            return response.status_code;
-        }
-        u32 GetResponseContentLength() const {
-            return std::stoi(response.header.at("Content-Length"));
-        }
-    };
-
-    bool ContextExists(u32 context_id, IPC::RequestParser& rp) const;
-
     /**
      * HTTP_C::Initialize service function
      *  Inputs:
@@ -183,6 +140,23 @@ private:
     void AddRequestHeader(Kernel::HLERequestContext& ctx);
 
     /**
+     * HTTP_C::GetResponseHeader service function
+     *  Inputs:
+     *      0 : Header Code[0x001E00C4]
+     *      1 : HTTP context handle
+     *      2 : Header name buffer size, including null-terminator.
+     *      3 : Header value buffer max size, including null-terminator.
+     *      4 : (HeaderNameSize<<14) | 0xC02
+     *      5 : Header name input data pointer
+     *      6 : (HeaderValueSize<<4) | 12
+     *      7 : Header value output data pointer
+     *  Outputs:
+     *      1 : Result of function, 0 on success, otherwise error code
+     *      2 : Total header value buffer size
+     */
+    void GetResponseHeader(Kernel::HLERequestContext& ctx);
+
+    /**
      * HTTP_C::GetResponseStatusCode service function
      *  Inputs:
      *      0 : Header Code[0x00220040]
@@ -227,9 +201,8 @@ private:
      */
     void SetKeepAlive(Kernel::HLERequestContext& ctx);
 
-    Kernel::SharedPtr<Kernel::SharedMemory> shared_memory = nullptr;
-    std::unordered_map<u32, Context> contexts{};
-    u32 context_counter{0};
+    class Impl;
+    std::unique_ptr<Impl> pimpl;
 };
 
 void InstallInterfaces(SM::ServiceManager& service_manager);
