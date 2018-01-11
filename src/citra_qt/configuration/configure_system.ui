@@ -22,10 +22,36 @@
         <string>System Settings</string>
        </property>
        <layout class="QGridLayout" name="gridLayout">
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_birthday">
+        <item row="3" column="1">
+         <widget class="QComboBox" name="combo_sound">
+          <item>
+           <property name="text">
+            <string>Mono</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Stereo</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Surround</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="5" column="0">
+         <widget class="QLabel" name="label_console_id">
           <property name="text">
-           <string>Birthday</string>
+           <string>Console ID:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_username">
+          <property name="text">
+           <string>Username</string>
           </property>
          </widget>
         </item>
@@ -42,10 +68,17 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_username">
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_birthday">
           <property name="text">
-           <string>Username</string>
+           <string>Birthday</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_language">
+          <property name="text">
+           <string>Language</string>
           </property>
          </widget>
         </item>
@@ -119,20 +152,6 @@
            <widget class="QComboBox" name="combo_birthday"/>
           </item>
          </layout>
-        </item>
-        <item row="3" column="0">
-         <widget class="QLabel" name="label_sound">
-          <property name="text">
-           <string>Sound output mode</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="label_language">
-          <property name="text">
-           <string>Language</string>
-          </property>
-         </widget>
         </item>
         <item row="2" column="1">
          <widget class="QComboBox" name="combo_language">
@@ -217,36 +236,17 @@
           </property>
          </widget>
         </item>
-        <item row="5" column="0">
-         <widget class="QLabel" name="label_console_id">
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_sound">
           <property name="text">
-           <string>Console ID:</string>
+           <string>Sound output mode</string>
           </property>
-         </widget>
-        </item>
-        <item row="3" column="1">
-         <widget class="QComboBox" name="combo_sound">
-          <item>
-           <property name="text">
-            <string>Mono</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Stereo</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Surround</string>
-           </property>
-          </item>
          </widget>
         </item>
         <item row="4" column="0">
          <widget class="QLabel" name="label_console_model">
           <property name="text">
-           <string>Model</string>
+           <string>Model:</string>
           </property>
          </widget>
         </item>
