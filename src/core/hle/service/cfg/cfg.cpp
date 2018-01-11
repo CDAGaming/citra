@@ -221,12 +221,12 @@ void GetRegionCanadaUSA(Service::Interface* self) {
     }
 }
 
-void SetSystemModel(u32 model) {
-    LOG_DEBUG(Service_CFG, "called model=%u", model);
-    SetConfigInfoBlock(ConsoleModelBlockID, 4, 0x8, reinterpret_cast<u8*>(&model));
+void SetSystemModel(ConsoleModelInfo model) {
+    LOG_DEBUG(Service_CFG, "called model=%u", model.model);
+    SetConfigInfoBlock(ConsoleModelBlockID, sizeof(model), 0x8, &model);
 }
 
-u32 GetSystemModelID() {
+u32 GetSystemModel() {
     u32 model;
     GetConfigInfoBlock(ConsoleModelBlockID, 4, 0x8, reinterpret_cast<u8*>(&model));
     LOG_DEBUG(Service_CFG, "called model=%u", model);
