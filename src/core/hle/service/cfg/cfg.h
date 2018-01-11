@@ -148,7 +148,7 @@ void SetSystemModel(ConsoleModelInfo model);
  * Gets the model from config savegame.
  * @returns the model
  */
-u32 GetSystemModel();
+ConsoleModelInfo GetSystemModel();
 
 /**
  * CFG::GetSystemModel service function
