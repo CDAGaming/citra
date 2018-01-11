@@ -73,7 +73,7 @@ void ConfigureSystem::ReadSystemSettings() {
     ui->combo_language->setCurrentIndex(language_index);
 
     // set model
-    model_index = Service::CFG::GetSystemModel();
+    model_index = static_cast<int>(Service::CFG::GetSystemModel().model);
     ui->combo_model->setCurrentIndex(model_index);
 
     // set sound output mode
