@@ -74,7 +74,7 @@ void ConfigureSystem::ReadSystemSettings() {
 
     // set model
     model_index = Service::CFG::GetSystemModel();
-    ui->combo_model->setCurrentIndex(Service::CFG::GetSystemModel());
+    ui->combo_model->setCurrentIndex(model_index);
 
     // set sound output mode
     sound_index = Service::CFG::GetSoundOutputMode();
@@ -118,9 +118,10 @@ void ConfigureSystem::applyConfiguration() {
     }
 
     // apply model
-    u32 new_model = ui->combo_model->currentIndex();
+    int new_model = ui->combo_model->currentIndex();
     if (model_index != new_model) {
-        Service::CFG::SetSystemModel(new_model);
+        Service::CFG::ConsoleModelInfo new_model_info = {new_model, {0, 0, 0}};
+        Service::CFG::SetSystemModel(new_model_info);
         modified = true;
     }
 
