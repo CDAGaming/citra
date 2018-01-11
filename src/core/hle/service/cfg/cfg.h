@@ -140,7 +140,7 @@ void GetRegionCanadaUSA(Service::Interface* self);
 
 /**
  * Sets the model in config savegame.
- * @param model the model to set.
+ * @param model the model info to set.
  */
 void SetSystemModel(ConsoleModelInfo model);
 
