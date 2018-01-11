@@ -226,11 +226,11 @@ void SetSystemModel(ConsoleModelInfo model) {
     SetConfigInfoBlock(ConsoleModelBlockID, sizeof(model), 0x8, &model);
 }
 
-u32 GetSystemModel() {
-    u32 model;
-    GetConfigInfoBlock(ConsoleModelBlockID, 4, 0x8, reinterpret_cast<u8*>(&model));
-    LOG_DEBUG(Service_CFG, "called model=%u", model);
-    return model;
+ConsoleModelInfo GetSystemModel() {
+    ConsoleModelInfo info;
+    GetConfigInfoBlock(ConsoleModelBlockID, 4, 0x8, &info);
+    LOG_DEBUG(Service_CFG, "called model=%u", info.model);
+    return info;
 }
 
 void GetSystemModel(Service::Interface* self) {
