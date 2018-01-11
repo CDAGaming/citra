@@ -251,7 +251,7 @@
          </widget>
         </item>
         <item row="4" column="1">
-         <widget class="QComboBox" name="comboBox">
+         <widget class="QComboBox" name="combo_model">
           <item>
            <property name="text">
             <string>Nintendo 3DS</string>
