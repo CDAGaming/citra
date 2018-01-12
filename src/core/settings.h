@@ -110,6 +110,8 @@ struct Values {
     u16 custom_bottom_top;
     u16 custom_bottom_right;
     u16 custom_bottom_bottom;
+    
+    float tilt_clamp;
 
     float bg_red;
     float bg_green;
