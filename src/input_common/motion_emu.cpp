@@ -11,6 +11,7 @@
 #include "common/thread.h"
 #include "common/vector_math.h"
 #include "input_common/motion_emu.h"
+#include "core/settings.h"
 
 namespace InputCommon {
 
