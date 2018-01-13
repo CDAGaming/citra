@@ -22,7 +22,7 @@ public:
         : update_millisecond(update_millisecond),
           update_duration(std::chrono::duration_cast<std::chrono::steady_clock::duration>(
               std::chrono::milliseconds(update_millisecond))),
-          sensitivity(sensitivity), motion_emu_thread(&MotionEmuDevice::MotionEmuThread, this) { this.tilt_clamp = tilt_clamp;}
+          sensitivity(sensitivity), motion_emu_thread(&MotionEmuDevice::MotionEmuThread, this) { this->tilt_clamp = tilt_clamp;}
 
     ~MotionEmuDevice() {
         if (motion_emu_thread.joinable()) {
@@ -45,7 +45,7 @@ public:
             } else {
                 tilt_direction = mouse_move.Cast<float>();
                 tilt_angle = MathUtil::Clamp(tilt_direction.Normalize() * sensitivity, 0.0f,
-                                             MathUtil::PI * (this.tilt_clamp)/180.0f);
+                                             MathUtil::PI * (this->tilt_clamp)/180.0f);
             }
         }
     }
