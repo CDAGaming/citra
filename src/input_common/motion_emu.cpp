@@ -22,7 +22,8 @@ public:
         : update_millisecond(update_millisecond),
           update_duration(std::chrono::duration_cast<std::chrono::steady_clock::duration>(
               std::chrono::milliseconds(update_millisecond))),
-          sensitivity(sensitivity), motion_emu_thread(&MotionEmuDevice::MotionEmuThread, this) { this->tilt_clamp = tilt_clamp;}
+          sensitivity(sensitivity),
+          tilt_clamp(tilt_clamp), motion_emu_thread(&MotionEmuDevice::MotionEmuThread, this) {}
 
     ~MotionEmuDevice() {
         if (motion_emu_thread.joinable()) {
