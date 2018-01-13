@@ -128,8 +128,8 @@ private:
 // can forward all the inputs to the implementation only when it is valid.
 class MotionEmuDeviceWrapper : public Input::MotionDevice {
 public:
-    MotionEmuDeviceWrapper(int update_millisecond, float sensitivity) {
-        device = std::make_shared<MotionEmuDevice>(update_millisecond, sensitivity);
+    MotionEmuDeviceWrapper(int update_millisecond, float sensitivity, float tilt_clamp) {
+        device = std::make_shared<MotionEmuDevice>(update_millisecond, sensitivity, tilt_clamp);
     }
 
     std::tuple<Math::Vec3<float>, Math::Vec3<float>> GetStatus() const {
