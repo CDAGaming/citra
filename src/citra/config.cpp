@@ -77,7 +77,7 @@ void Config::ReadValues() {
     }
 
     Settings::values.motion_device = sdl2_config->Get(
-        "Controls", "motion_device", "engine:motion_emu,update_period:100,sensitivity:0.01");
+        "Controls", "motion_device", "engine:motion_emu,update_period:100,sensitivity:0.01,tilt_clamp:90.0");
     Settings::values.touch_device =
         sdl2_config->Get("Controls", "touch_device", "engine:emu_window");
 
@@ -92,8 +92,6 @@ void Config::ReadValues() {
     Settings::values.use_vsync = sdl2_config->GetBoolean("Renderer", "use_vsync", false);
     Settings::values.toggle_framelimit =
         sdl2_config->GetBoolean("Renderer", "toggle_framelimit", true);
-
-    Settings::values.tilt_clamp = (float)sdl2_config->GetReal("Renderer", "tilt_clamp", 90.0);
     
     Settings::values.bg_red = (float)sdl2_config->GetReal("Renderer", "bg_red", 0.0);
     Settings::values.bg_green = (float)sdl2_config->GetReal("Renderer", "bg_green", 0.0);
