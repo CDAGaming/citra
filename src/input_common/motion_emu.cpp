@@ -46,7 +46,7 @@ public:
             } else {
                 tilt_direction = mouse_move.Cast<float>();
                 tilt_angle = MathUtil::Clamp(tilt_direction.Normalize() * sensitivity, 0.0f,
-                                             MathUtil::PI * (this->tilt_clamp)/180.0f);
+                                             MathUtil::PI * this->tilt_clamp/180.0f);
             }
         }
     }
