@@ -45,7 +45,7 @@ public:
             } else {
                 tilt_direction = mouse_move.Cast<float>();
                 tilt_angle = MathUtil::Clamp(tilt_direction.Normalize() * sensitivity, 0.0f,
-                                             MathUtil::PI * this->tilt_clamp/180.0f);
+                                             MathUtil::PI * this->tilt_clamp / 180.0f);
             }
         }
     }
@@ -143,7 +143,8 @@ std::unique_ptr<Input::MotionDevice> MotionEmu::Create(const Common::ParamPackag
     int update_period = params.Get("update_period", 100);
     float sensitivity = params.Get("sensitivity", 0.01f);
     float tilt_clamp = params.Get("tilt_clamp", 90.0f);
-    auto device_wrapper = std::make_unique<MotionEmuDeviceWrapper>(update_period, sensitivity, tilt_clamp);
+    auto device_wrapper =
+        std::make_unique<MotionEmuDeviceWrapper>(update_period, sensitivity, tilt_clamp);
     // Previously created device is disconnected here. Having two motion devices for 3DS is not
     // expected.
     current_device = device_wrapper->device;
