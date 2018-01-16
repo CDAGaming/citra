@@ -10,14 +10,14 @@ endif()
 
 add_executable(citra-qt
     Info.plist
-    camera/still_image_camera.cpp
     aboutdialog.cpp
     aboutdialog.h
     bootmanager.cpp
     bootmanager.h
     citra-qt.rc
-    configuration/config.cpp
+    camera/still_image_camera.cpp
     camera/still_image_camera.h
+    configuration/config.cpp
     configuration/config.h
     configuration/configure_audio.cpp
     configuration/configure_audio.h
@@ -35,6 +35,8 @@ add_executable(citra-qt
     configuration/configure_system.h
     configuration/configure_web.cpp
     configuration/configure_web.h
+    crash_dialog/crash_dialog.cpp
+    crash_dialog/crash_dialog.h
     debugger/graphics/graphics.cpp
     debugger/graphics/graphics.h
     debugger/graphics/graphics_breakpoint_observer.cpp
@@ -100,6 +102,7 @@ set(UIS
     configuration/configure_input.ui
     configuration/configure_system.ui
     configuration/configure_web.ui
+    crash_dialog/crash_dialog.ui
     debugger/registers.ui
     multiplayer/direct_connect.ui
     multiplayer/lobby.ui
@@ -135,7 +138,7 @@ endif()
 create_target_directory_groups(citra-qt)
 
 target_link_libraries(citra-qt PRIVATE audio_core common core input_common network video_core)
-target_link_libraries(citra-qt PRIVATE Boost::boost glad nihstro-headers Qt5::OpenGL Qt5::Widgets)
+target_link_libraries(citra-qt PRIVATE Boost::boost fmt glad nihstro-headers Qt5::OpenGL Qt5::Widgets)
 target_link_libraries(citra-qt PRIVATE ${PLATFORM_LIBRARIES} Threads::Threads)
 
 if(WIN32)

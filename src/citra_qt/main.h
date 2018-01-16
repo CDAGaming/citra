@@ -15,6 +15,10 @@
 #include "ui_main.h"
 
 class AboutDialog;
+namespace Common {
+struct CrashInformation;
+}
+
 class Config;
 class ClickableLabel;
 class EmuThread;
@@ -178,6 +182,7 @@ private slots:
     void HideFullscreen();
     void ToggleWindowMode();
     void OnCreateGraphicsSurfaceViewer();
+    void OnCrashed(const Common::CrashInformation&);
     void OnCoreError(Core::System::ResultStatus, std::string);
     /// Called whenever a user selects Help->About Citra
     void OnMenuAboutCitra();

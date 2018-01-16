@@ -38,6 +38,8 @@ add_library(common STATIC
     common_funcs.h
     common_paths.h
     common_types.h
+    crash_handler.cpp
+    crash_handler.h
     file_util.cpp
     file_util.h
     hash.cpp
@@ -76,6 +78,7 @@ add_library(common STATIC
     threadsafe_queue.h
     timer.cpp
     timer.h
+    ui_util.h
     vector_math.h
 )
 
@@ -87,7 +90,17 @@ if(ARCHITECTURE_x86_64)
             x64/cpu_detect.h
             x64/xbyak_abi.h
             x64/xbyak_util.h
-    )
+            )
+endif()
+
+if (WIN32)
+  target_sources(common PRIVATE ui_util_windows.cpp)
+elseif (APPLE)
+  target_sources(common PRIVATE ui_util_macos.mm)
+elseif (UNIX)
+  target_sources(common PRIVATE ui_util_linux.cpp)
+else()
+   message(FATAL_ERROR "Citra: Unknown Platform: ${CMAKE_SYSTEM_NAME}")
 endif()
 
 create_target_directory_groups(common)
