@@ -34,6 +34,7 @@ class QProgressBar;
 class RegistersWidget;
 class Updater;
 class WaitTreeWidget;
+class WindowsExtras;
 
 // Multiplayer forward declarations
 class Lobby;
@@ -62,6 +63,7 @@ class GMainWindow : public QMainWindow {
 public:
     void filterBarSetChecked(bool state);
     void UpdateUITheme();
+    void ShowWindowsExtras();
     void ChangeRoomState();
 
     GameList* game_list;
@@ -102,6 +104,7 @@ private:
     void InitializeDebugWidgets();
     void InitializeRecentFileMenuActions();
     void InitializeHotkeys();
+    void InitializeWindowsExtras();
 
     void SetDefaultUIGeometry();
     void RestoreUIState();
@@ -153,6 +156,7 @@ private slots:
     void OnStartGame();
     void OnPauseGame();
     void OnStopGame();
+    void OnRestartGame();
     /// Called whenever a user selects a game in the game list widget.
     void OnGameListLoadFile(QString game_path);
     void OnGameListOpenSaveFolder(u64 program_id);
@@ -185,6 +189,8 @@ private:
     void UpdateStatusBar();
 
     Ui::MainWindow ui;
+
+    QString game_path_launched;
 
     GRenderWindow* render_window;
     QFutureWatcher<Service::AM::InstallStatus>* watcher = nullptr;
@@ -229,6 +235,10 @@ private:
     Network::RoomMember::CallbackHandle<Network::RoomMember::State> state_callback_handle;
 
     QAction* actions_recent_files[max_recent_files_item];
+
+#ifdef _WIN32
+    WindowsExtras* windows_extras; // Used for Thumbnail Toolbar
+#endif
 
 protected:
     void dropEvent(QDropEvent* event) override;

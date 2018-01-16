@@ -2,6 +2,10 @@
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
+#ifdef _WIN32
+#include "citra_qt/windows_extras.h"
+#endif
+
 #include <cinttypes>
 #include <clocale>
 #include <memory>
@@ -114,6 +118,10 @@ GMainWindow::GMainWindow() : config(new Config()), emu_thread(nullptr) {
     InitializeRecentFileMenuActions();
     InitializeHotkeys();
     ShowUpdaterWidgets();
+
+#ifdef _WIN32
+    InitializeWindowsExtras();
+#endif
 
     SetDefaultUIGeometry();
     RestoreUIState();
@@ -328,6 +336,22 @@ void GMainWindow::ShowUpdaterWidgets() {
 
     connect(updater, &Updater::CheckUpdatesDone, this, &GMainWindow::OnUpdateFound);
 }
+
+#ifdef _WIN32
+void GMainWindow::InitializeWindowsExtras() {
+    windows_extras = new WindowsExtras(this);
+
+    connect(windows_extras, &WindowsExtras::ClickStop, this, &GMainWindow::OnStopGame);
+    connect(windows_extras, &WindowsExtras::ClickRestart, this, &GMainWindow::OnRestartGame);
+    connect(windows_extras, &WindowsExtras::ClickPlayPause, [this] {
+        if (emu_thread->IsRunning()) {
+            OnPauseGame();
+        } else {
+            OnStartGame();
+        }
+    });
+}
+#endif
 
 void GMainWindow::SetDefaultUIGeometry() {
     // geometry: 55% of the window contents are in the upper screen half, 45% in the lower half
@@ -628,6 +652,7 @@ void GMainWindow::BootGame(const QString& filename) {
     render_window->show();
     render_window->setFocus();
 
+    game_path_launched = filename;
     emulation_running = true;
     if (ui.action_Fullscreen->isChecked()) {
         ShowFullscreen();
@@ -861,6 +886,10 @@ void GMainWindow::OnStartGame() {
 
     ui.action_Pause->setEnabled(true);
     ui.action_Stop->setEnabled(true);
+
+#ifdef _WIN32
+    windows_extras->UpdatePlay();
+#endif
 }
 
 void GMainWindow::OnPauseGame() {
@@ -869,10 +898,22 @@ void GMainWindow::OnPauseGame() {
     ui.action_Start->setEnabled(true);
     ui.action_Pause->setEnabled(false);
     ui.action_Stop->setEnabled(true);
+
+#ifdef _WIN32
+    windows_extras->UpdatePause();
+#endif
 }
 
 void GMainWindow::OnStopGame() {
     ShutdownGame();
+
+#ifdef _WIN32
+    windows_extras->UpdateStop();
+#endif
+}
+
+void GMainWindow::OnRestartGame() {
+    BootGame(game_path_launched);
 }
 
 void GMainWindow::ToggleFullscreen() {
@@ -1214,6 +1255,12 @@ void GMainWindow::UpdateUITheme() {
     }
 }
 
+#ifdef _WIN32
+void GMainWindow::ShowWindowsExtras() {
+    windows_extras->Show();
+}
+#endif
+
 void GMainWindow::ChangeRoomState() {
     if (auto room = Network::GetRoom().lock()) {
         if (room->GetState() == Network::Room::State::Open) {
@@ -1255,5 +1302,10 @@ int main(int argc, char* argv[]) {
     Camera::RegisterFactory("image", std::make_unique<Camera::StillImageCameraFactory>());
 
     main_window.show();
+
+#ifdef _WIN32
+    main_window.ShowWindowsExtras();
+#endif
+
     return app.exec();
 }
