@@ -392,6 +392,8 @@ add_library(core STATIC
     movie.h
     perf_stats.cpp
     perf_stats.h
+    save_state.cpp
+    save_state.h
     settings.cpp
     settings.h
     telemetry_session.cpp

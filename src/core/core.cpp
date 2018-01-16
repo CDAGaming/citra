@@ -6,6 +6,7 @@
 #include <utility>
 #include "audio_core/audio_core.h"
 #include "common/logging/log.h"
+#include "common/save_state_helper.h"
 #include "core/arm/arm_interface.h"
 #ifdef ARCHITECTURE_x86_64
 #include "core/arm/dynarmic/arm_dynarmic.h"
@@ -212,5 +213,11 @@ void System::Shutdown() {
 
     LOG_DEBUG(Core, "Shutdown OK");
 }
+
+template <typename Archive>
+void System::SerializeState(Archive& ar) {
+    CoreTiming::SerializeState(ar);
+}
+INSTANTIATE_SERALIZATION_FUNCTION(System::SerializeState)
 
 } // namespace Core
