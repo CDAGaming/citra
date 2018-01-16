@@ -72,6 +72,10 @@ void ConfigureSystem::ReadSystemSettings() {
     language_index = Service::CFG::GetSystemLanguage();
     ui->combo_language->setCurrentIndex(language_index);
 
+    // set model
+    model_index = static_cast<int>(Service::CFG::GetSystemModel().model);
+    ui->combo_model->setCurrentIndex(model_index);
+
     // set sound output mode
     sound_index = Service::CFG::GetSoundOutputMode();
     ui->combo_sound->setCurrentIndex(sound_index);
@@ -110,6 +114,14 @@ void ConfigureSystem::applyConfiguration() {
     int new_language = ui->combo_language->currentIndex();
     if (language_index != new_language) {
         Service::CFG::SetSystemLanguage(static_cast<Service::CFG::SystemLanguage>(new_language));
+        modified = true;
+    }
+
+    // apply model
+    int new_model = ui->combo_model->currentIndex();
+    if (model_index != new_model) {
+        Service::CFG::ConsoleModelInfo new_model_info = {new_model, {0, 0, 0}};
+        Service::CFG::SetSystemModel(new_model_info);
         modified = true;
     }
 

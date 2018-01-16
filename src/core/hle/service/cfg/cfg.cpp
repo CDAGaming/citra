@@ -221,6 +221,18 @@ void GetRegionCanadaUSA(Service::Interface* self) {
     }
 }
 
+void SetSystemModel(ConsoleModelInfo model) {
+    LOG_DEBUG(Service_CFG, "called model=%u", model.model);
+    SetConfigInfoBlock(ConsoleModelBlockID, sizeof(model), 0x8, &model);
+}
+
+ConsoleModelInfo GetSystemModel() {
+    ConsoleModelInfo info;
+    GetConfigInfoBlock(ConsoleModelBlockID, 4, 0x8, &info);
+    LOG_DEBUG(Service_CFG, "called model=%u", info.model);
+    return info;
+}
+
 void GetSystemModel(Service::Interface* self) {
     u32* cmd_buff = Kernel::GetCommandBuffer();
     u32 data;

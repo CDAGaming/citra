@@ -36,4 +36,5 @@ private:
     int birthmonth, birthday;
     int language_index;
     int sound_index;
+    int model_index;
 };
