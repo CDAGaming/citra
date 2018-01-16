@@ -91,6 +91,8 @@ add_executable(citra-qt
     util/util.cpp
     util/util.h
     ${windows_files}
+    compatdb.cpp
+    compatdb.h
 )
 
 set(UIS
@@ -112,6 +114,7 @@ set(UIS
     aboutdialog.ui
     hotkeys.ui
     main.ui
+    compatdb.ui
 )
 
 file(GLOB_RECURSE ICONS ${CMAKE_SOURCE_DIR}/dist/icons/*)

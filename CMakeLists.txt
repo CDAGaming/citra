@@ -16,13 +16,13 @@ option(CITRA_USE_BUNDLED_QT "Download bundled Qt binaries" OFF)
 option(ENABLE_WEB_SERVICE "Enable web services (telemetry, etc.)" ON)
 option(CITRA_USE_BUNDLED_CURL "FOR MINGW ONLY: Download curl configured against winssl instead of openssl" OFF)
 
-if (ENABLE_WEB_SERVICE AND CITRA_USE_BUNDLED_CURL AND WINDOWS AND MSVC)
-    message("Turning off use bundled curl as msvc can compile curl on cpr")
-    SET(CITRA_USE_BUNDLED_CURL OFF CACHE BOOL "" FORCE)
-endif()
 if (ENABLE_WEB_SERVICE AND NOT CITRA_USE_BUNDLED_CURL AND MINGW)
     message(AUTHOR_WARNING "Turning on CITRA_USE_BUNDLED_CURL. Override it only if you know what you are doing.")
     SET(CITRA_USE_BUNDLED_CURL ON CACHE BOOL "" FORCE)
+endif()
+if (CITRA_ENABLE_COMPATIBILITY_REPORTING AND NOT ENABLE_WEB_SERVICE)
+    message("Compatibility reporting requires web services to be enabled")
+    SET(CITRA_ENABLE_COMPATIBILITY_REPORTING OFF CACHE BOOL "" FORCE)
 endif()
 
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/.git/hooks/pre-commit)
@@ -247,6 +247,9 @@ endif()
 
 if (ENABLE_WEB_SERVICE)
     add_definitions(-DENABLE_WEB_SERVICE)
+endif()
+if (CITRA_ENABLE_COMPATIBILITY_REPORTING)
+    add_definitions(-DCITRA_ENABLE_COMPATIBILITY_REPORTING)
 endif()
 
 # Platform-specific library requirements
