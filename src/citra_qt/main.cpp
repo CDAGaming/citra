@@ -111,6 +111,8 @@ GMainWindow::GMainWindow() : config(new Config()), emu_thread(nullptr) {
     // register size_t to use in slots and signals
     qRegisterMetaType<size_t>("size_t");
 
+    LoadTranslation();
+
     Pica::g_debug_context = Pica::DebugContext::Construct();
     setAcceptDrops(true);
     ui.setupUi(this);
@@ -132,6 +134,7 @@ GMainWindow::GMainWindow() : config(new Config()), emu_thread(nullptr) {
     ConnectMenuEvents();
     ConnectWidgetEvents();
 
+    SetupUIStrings();
     Network::Init();
 
     if (auto member = Network::GetRoomMember().lock()) {
@@ -144,8 +147,6 @@ GMainWindow::GMainWindow() : config(new Config()), emu_thread(nullptr) {
 
     qRegisterMetaType<Common::WebResult>();
 
-    setWindowTitle(QString("Citra %1| %2-%3")
-                       .arg(Common::g_build_name, Common::g_scm_branch, Common::g_scm_desc));
     show();
 
     game_list->PopulateAsync(UISettings::values.gamedir, UISettings::values.gamedir_deepscan);
@@ -984,6 +985,8 @@ void GMainWindow::ToggleWindowMode() {
 
 void GMainWindow::OnConfigure() {
     ConfigureDialog configureDialog(this);
+    connect(&configureDialog, &ConfigureDialog::languageChanged, this,
+            &GMainWindow::OnLanguageChanged);
     auto result = configureDialog.exec();
     if (result == QDialog::Accepted) {
         configureDialog.applyConfiguration();
@@ -1265,6 +1268,45 @@ void GMainWindow::UpdateUITheme() {
         qApp->setStyleSheet("");
         GMainWindow::setStyleSheet("");
     }
+}
+
+void GMainWindow::LoadTranslation() {
+    // If the selected language is English, no need to install any translation
+    if (UISettings::values.language == "en") {
+        return;
+    }
+
+    bool loaded;
+
+    if (UISettings::values.language.isEmpty()) {
+        // If the selected language is empty, use system locale
+        loaded = translator.load(QLocale(), "", "", ":/languages/");
+    } else {
+        // Otherwise load from the specified file
+        loaded = translator.load(UISettings::values.language, ":/languages/");
+    }
+
+    if (loaded) {
+        qApp->installTranslator(&translator);
+    } else {
+        UISettings::values.language = "en";
+    }
+}
+
+void GMainWindow::OnLanguageChanged(const QString& locale) {
+    if (UISettings::values.language != "en") {
+        qApp->removeTranslator(&translator);
+    }
+
+    UISettings::values.language = locale;
+    LoadTranslation();
+    ui.retranslateUi(this);
+    SetupUIStrings();
+}
+
+void GMainWindow::SetupUIStrings() {
+    setWindowTitle(
+        tr("Citra %1| %2-%3").arg(Common::g_build_name, Common::g_scm_branch, Common::g_scm_desc));
 }
 
 #ifdef _WIN32

@@ -8,6 +8,7 @@
 #include <QLabel>
 #include <QMainWindow>
 #include <QTimer>
+#include <QTranslator>
 #include "common/announce_multiplayer_room.h"
 #include "core/core.h"
 #include "core/hle/service/am/am.h"
@@ -189,9 +190,12 @@ private slots:
     void OnUpdateFound(bool found, bool error);
     void OnCheckForUpdates();
     void OnOpenUpdater();
+    void OnLanguageChanged(const QString& locale);
 
 private:
     void UpdateStatusBar();
+    void LoadTranslation();
+    void SetupUIStrings();
 
     Ui::MainWindow ui;
 
@@ -240,6 +244,8 @@ private:
     Network::RoomMember::CallbackHandle<Network::RoomMember::State> state_callback_handle;
 
     QAction* actions_recent_files[max_recent_files_item];
+
+    QTranslator translator;
 
 #ifdef _WIN32
     WindowsExtras* windows_extras; // Used for Thumbnail Toolbar
