@@ -286,6 +286,7 @@ void Init() {
     FRD::Init();
     GSP::InstallInterfaces(*SM::g_service_manager);
     HID::InstallInterfaces(*SM::g_service_manager);
+    HTTP::InstallInterfaces(*SM::g_service_manager);
     IR::InstallInterfaces(*SM::g_service_manager);
     MVD::Init();
     NDM::Init();
@@ -299,7 +300,6 @@ void Init() {
     AddService(new CSND::CSND_SND);
     AddService(new DSP_DSP::Interface);
     AddService(new GSP::GSP_LCD);
-    AddService(new HTTP::HTTP_C);
     AddService(new PM::PM_APP);
     AddService(new SOC::SOC_U);
     AddService(new SSL::SSL_C);
